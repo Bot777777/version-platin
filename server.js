@@ -10,8 +10,8 @@ let balance = 250000;
 
 // 📊 Coins
 let coins = {
-  BTC: { price: 68950,93 owned: 1},
-  ETH: { price: 1878,84, owned: 0 },
+  BTC: { price: 50000, owned: 0 },
+  ETH: { price: 3000, owned: 0 },
   SOL: { price: 100, owned: 0 }
 };
 
