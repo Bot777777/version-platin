@@ -18,14 +18,7 @@ let botRunning = false;
 // 🪙 COINS
 let symbols = ["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","ADAUSDT","DOGEUSDT","BNBUSDT"];
 
-let coins = {};
-symbols.forEach(s=>{
-coins[s] = {
-  price: 100 + Math.random()*1000,
-  history: [],
-  buys: [],
-  last: 100,
-  setInterval(() => {
+let coins = {};setInterval(() => {
   for (let s in coins) {
     let change = (Math.random() - 0.5) * 0.005;
 
@@ -36,7 +29,13 @@ coins[s] = {
     if (coins[s].history.length > 50)
       coins[s].history.shift();
   }
-}, 2000);};
+}, 2000);symbols.forEach(s=>{
+coins[s] = {
+  price: 100 + Math.random()*1000,
+  history: [],
+  buys: [],
+  last: 100,
+ 
 });
 
 // 📜 TRADE LOG
