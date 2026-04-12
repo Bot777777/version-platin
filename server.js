@@ -31,9 +31,7 @@ coins[s] = {
   price: 100 + Math.random()*1000,
   history: [],
   buys: [],
-  last: 100,
- 
-});
+  last: 100,});
 
 // 📜 TRADE LOG
 let tradeLog = [];
