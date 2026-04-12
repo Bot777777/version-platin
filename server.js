@@ -4,7 +4,7 @@ const path = require("path");
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname, "frontend")));
 // 👤 USER
 let user = {
   balance: 10000,
@@ -203,6 +203,9 @@ app.post("/sell",(req,res)=>{
 });
 
 // 🌐 UI
+app.get("/", (req,res)=>{
+  res.sendFile(path.join(__dirname, "frontend", "index.html"));
+});
 app.get("/", (req,res)=>{
 res.send(`
 <html>
