@@ -203,8 +203,7 @@ app.post("/sell",(req,res)=>{
 });
 
 // 🌐 UI
-app.get("/", (req,res)=>{
-  res.sendFile(path.join(__dirname, "frontend", "index.html"));
+
 });
 app.get("/", (req,res)=>{
 res.send(`
@@ -347,4 +346,6 @@ load();
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, ()=>console.log("🚀 V2.1 PRO läuft"));
+
+app.get("/", (req,res)=>{
+  res.sendFile(path.join(__dirname, "frontend", "index.html"));.listen(PORT, ()=>console.log("🚀 V2.1 PRO läuft"));
