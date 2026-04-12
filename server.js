@@ -6,7 +6,7 @@ app.use(cors());
 app.use(express.json());
 
 // USER
-let tradeLog = ();
+let tradeLog = [];
 let user = {
   balance: 10000,
   portfolio: {}
