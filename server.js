@@ -130,8 +130,44 @@ app.get("/data",(req,res)=>{
     botRunning,
     tradeLog,
     time: Date.now()
-  });
-});
+  });app.get("/", (req,res)=>{
+res.send(`
+<html>
+<body style="background:#0b0f14;color:white;font-family:Arial">
+
+<h2>🚀 Trading App</h2>
+
+<div id="coins"></div>
+
+<script>
+async function load(){
+  const res = await fetch('/data');
+  const data = await res.json();
+
+  let html = '';
+
+  for(let c in data.coins){
+    let coin = data.coins[c];
+
+    html += `
+      <div style="background:#222;padding:10px;margin:10px;border-radius:10px">
+        <h3>${c}</h3>
+        <p>$ ${coin.price}</p>
+      </div>
+    `;
+  }
+
+  document.getElementById("coins").innerHTML = html;
+}
+
+setInterval(load,2000);
+load();
+</script>
+
+</body>
+</html>
+`);
+});});
 
 app.post("/login",(req,res)=>{
   user.loggedIn = true;
