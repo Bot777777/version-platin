@@ -7,71 +7,93 @@ app.use(express.json());
 
 let user = {
   balance: 10000,
-  portfolio: {}
+  portfolio: {},
+  loggedIn: false
 };
 
 let botRunning = false;
 
-// 🪙 Mehr Coins
-let coins = {
-  BTC: { price: 50000, history: [], buys: [] },
-  ETH: { price: 3000, history: [], buys: [] },
-  SOL: { price: 100, history: [], buys: [] },
-  XRP: { price: 0.5, history: [], buys: [] },
-  ADA: { price: 0.4, history: [], buys: [] },
-  DOGE: { price: 0.1, history: [], buys: [] },
-  BNB: { price: 400, history: [], buys: [] }
-};
+// Coins (mehr)
+let symbols = ["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","ADAUSDT","DOGEUSDT","BNBUSDT"];
 
-// 📊 „Realistischere“ Marktbewegung
-setInterval(() => {
-  for (let c in coins) {
-    let change = (Math.random() - 0.5) * 0.008;
-    coins[c].price *= (1 + change);
+let coins = {};
 
-    coins[c].history.push(coins[c].price);
-    if (coins[c].history.length > 60) coins[c].history.shift();
+// Init
+symbols.forEach(s=>{
+  coins[s] = { price: 0, history: [], buys: [], last: 0 };
+});
+
+// 🌍 LIVE Preise von Binance (ohne API Key)
+async function fetchPrices(){
+  try{
+    const res = await fetch("https://api.binance.com/api/v3/ticker/price");
+    const data = await res.json();
+
+    data.forEach(item=>{
+      if(coins[item.symbol]){
+        let price = parseFloat(item.price);
+
+        coins[item.symbol].last = coins[item.symbol].price;
+        coins[item.symbol].price = price;
+
+        coins[item.symbol].history.push(price);
+        if(coins[item.symbol].history.length > 60)
+          coins[item.symbol].history.shift();
+      }
+    });
+
+  }catch(e){
+    console.log("API Fehler");
   }
-}, 1500);
+}
 
-// 🧠 AI
+setInterval(fetchPrices, 4000);
+fetchPrices();
+
+// 🧠 AI Bot (aggressiver)
 function aiDecision(h){
-  if (h.length < 20) return "hold";
+  if(h.length < 20) return "hold";
 
   let short = h.slice(-5).reduce((a,b)=>a+b)/5;
   let long = h.slice(-20).reduce((a,b)=>a+b)/20;
 
-  if (short > long * 1.002) return "buy";
-  if (short < long * 0.998) return "sell";
+  if(short > long * 1.0015) return "buy";
+  if(short < long * 0.9985) return "sell";
 
   return "hold";
 }
 
-// 🤖 Bot
+// 🤖 BOT
 setInterval(()=>{
-  if (!botRunning) return;
+  if(!botRunning) return;
 
-  for (let c in coins){
-    let coin = coins[c];
+  for(let s of symbols){
+    let coin = coins[s];
     let decision = aiDecision(coin.history);
 
-    if (decision === "buy" && user.balance > coin.price){
+    if(decision==="buy" && user.balance > coin.price){
       user.balance -= coin.price;
-      user.portfolio[c] = (user.portfolio[c] || 0) + 1;
+      user.portfolio[s] = (user.portfolio[s]||0)+1;
       coin.buys.push(coin.price);
     }
 
-    if (decision === "sell" && user.portfolio[c] > 0){
+    if(decision==="sell" && user.portfolio[s]>0){
       user.balance += coin.price;
-      user.portfolio[c] -= 1;
+      user.portfolio[s]--;
       coin.buys.shift();
     }
   }
+
 },3000);
 
 // API
 app.get("/data",(req,res)=>{
   res.json({user, coins, botRunning});
+});
+
+app.post("/login",(req,res)=>{
+  user.loggedIn = true;
+  res.json({ok:true});
 });
 
 app.post("/bot/start",(req,res)=>{
@@ -84,17 +106,40 @@ app.post("/bot/stop",(req,res)=>{
   res.json({ok:true});
 });
 
+// 💰 MANUELL SELL
+app.post("/sell",(req,res)=>{
+  const {symbol} = req.body;
+
+  if(user.portfolio[symbol] > 0){
+    user.balance += coins[symbol].price;
+    user.portfolio[symbol]--;
+    coins[symbol].buys.shift();
+  }
+
+  res.json({ok:true});
+});
+
 // UI
 app.get("/", (req,res)=>{
 res.send(`
 <html>
 <body style="margin:0;background:#0b0f14;color:white;font-family:Arial">
 
-<div style="padding:10px;background:#111">
-  <h2>🚀 PRO Trading Terminal</h2>
-  <button onclick="start()">Start</button>
-  <button onclick="stop()">Stop</button>
-  <h3 id="balance"></h3>
+<div style="padding:10px;background:#111;display:flex;justify-content:space-between">
+  <h2>🚀 PRO TERMINAL V2</h2>
+  <div>
+    <button onclick="login()">Login</button>
+    <button onclick="start()">Start</button>
+    <button onclick="stop()">Stop</button>
+  </div>
+</div>
+
+<div style="padding:10px;background:#222">
+  <span id="status"></span> |
+  <span id="balance"></span> |
+  🌍 EU: <span id="eu"></span> |
+  🇺🇸 US: <span id="us"></span> |
+  🇨🇳 CN: <span id="cn"></span>
 </div>
 
 <canvas id="chart" width="400" height="200"></canvas>
@@ -102,6 +147,7 @@ res.send(`
 <div id="coins" style="display:flex;flex-wrap:wrap"></div>
 
 <script>
+let last = {};
 let chartData = [];
 
 function drawChart(){
@@ -112,81 +158,95 @@ function drawChart(){
 
   chartData.forEach((v,i)=>{
     const x = i * 6;
-    const open = v.open;
-    const close = v.close;
-    const high = v.high;
-    const low = v.low;
-
-    const color = close > open ? "lime" : "red";
+    const color = v.close > v.open ? "lime" : "red";
 
     ctx.strokeStyle = color;
     ctx.beginPath();
-    ctx.moveTo(x, 200 - high/50);
-    ctx.lineTo(x, 200 - low/50);
+    ctx.moveTo(x,200-v.high/100);
+    ctx.lineTo(x,200-v.low/100);
     ctx.stroke();
 
     ctx.fillStyle = color;
-    ctx.fillRect(x-2, 200 - Math.max(open,close)/50, 4,
-      Math.abs(open-close)/50 + 1);
+    ctx.fillRect(x-2,200-Math.max(v.open,v.close)/100,4,
+      Math.abs(v.open-v.close)/100 + 1);
   });
+}
+
+function updateClock(){
+  const now = new Date();
+
+  eu.innerText = now.toLocaleTimeString("de-DE",{timeZone:"Europe/Berlin"});
+  us.innerText = now.toLocaleTimeString("en-US",{timeZone:"America/New_York"});
+  cn.innerText = now.toLocaleTimeString("zh-CN",{timeZone:"Asia/Shanghai"});
 }
 
 async function load(){
   const res = await fetch('/data');
   const data = await res.json();
 
-  document.getElementById('balance').innerText =
-    '💰 $' + data.user.balance.toFixed(2);
+  balance.innerText = "💰 $" + data.user.balance.toFixed(2);
+  status.innerText = data.botRunning ? "🟢 BOT RUNNING" : "🔴 STOPPED";
 
-  let html = '';
+  let html='';
 
-  for (let c in data.coins){
-    const coin = data.coins[c];
+  for(let s in data.coins){
+    let coin = data.coins[s];
+    let prev = last[s] || coin.price;
 
-    // Kerzen erzeugen
-    if (c === "BTC"){
+    let color = coin.price > prev ? "lime" :
+                coin.price < prev ? "red" : "white";
+
+    last[s] = coin.price;
+
+    // Candles (BTC)
+    if(s==="BTCUSDT"){
       let h = coin.history;
-      if (h.length > 5){
+      if(h.length>5){
         chartData.push({
-          open: h[h.length-5],
-          close: h[h.length-1],
-          high: Math.max(...h.slice(-5)),
-          low: Math.min(...h.slice(-5))
+          open:h[h.length-5],
+          close:h[h.length-1],
+          high:Math.max(...h.slice(-5)),
+          low:Math.min(...h.slice(-5))
         });
-        if (chartData.length > 50) chartData.shift();
+        if(chartData.length>40) chartData.shift();
         drawChart();
       }
     }
 
-    let owned = data.user.portfolio[c] || 0;
-    let buys = coin.buys || [];
+    let owned = data.user.portfolio[s]||0;
+    let buys = coin.buys;
 
-    let avgBuy = buys.length
-      ? (buys.reduce((a,b)=>a+b)/buys.length).toFixed(2)
-      : "-";
-
-    let pnl = buys.length
-      ? ((coin.price - avgBuy) * owned).toFixed(2)
-      : 0;
+    let avg = buys.length ?
+      (buys.reduce((a,b)=>a+b)/buys.length).toFixed(2) : "-";
 
     html += \`
     <div style="flex:1 1 250px;margin:10px;padding:15px;background:#161b22;border-radius:10px">
-      <h3>\${c}</h3>
-      <p>$ \${coin.price.toFixed(4)}</p>
+      <h3>\${s}</h3>
+      <p style="color:\${color}">$ \${coin.price.toFixed(4)}</p>
       <p>Owned: \${owned}</p>
-      <p>Buy Price: \${avgBuy}</p>
-      <p>PnL: \${pnl}</p>
+      <p>Buy: \${avg}</p>
+      <button onclick="sell('\${s}')">Sell</button>
     </div>
     \`;
   }
 
-  document.getElementById('coins').innerHTML = html;
+  coins.innerHTML = html;
 }
 
+async function sell(s){
+  await fetch('/sell',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({symbol:s})
+  });
+}
+
+async function login(){ await fetch('/login',{method:'POST'}); }
 async function start(){ await fetch('/bot/start',{method:'POST'}); }
 async function stop(){ await fetch('/bot/stop',{method:'POST'}); }
 
-setInterval(load,2000);
+setInterval(load,3000);
+setInterval(updateClock,1000);
 load();
 </script>
 
@@ -196,4 +256,4 @@ load();
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, ()=>console.log("🚀 PRO+ läuft"));
+app.listen(PORT, ()=>console.log("🚀 V2 LIVE läuft"));
