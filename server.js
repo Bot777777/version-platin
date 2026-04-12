@@ -13,7 +13,6 @@ let coins = {
   BTC: { price: 68950,93 owned: 1},
   ETH: { price: 1878,84, owned: 0 },
   SOL: { price: 100, owned: 0 }
-  xrp :( price    1,14 , owned :1000
 };
 
 // 📈 Preis Simulation
