@@ -7,8 +7,8 @@ app.use(cors());
 app.use(express.json());
 
 // 👤 User
-let user = ,
-  balance:  10000,
+let user = {
+  balance: 10000,
   portfolio: {}
 };
 
@@ -36,6 +36,7 @@ updateMarket();
 // 🧠 AI BOT
 function aiDecision(price, lastPrice){
   if (!lastPrice) return "hold";
+
   if (price > lastPrice * 1.002) return "buy";
   if (price < lastPrice * 0.998) return "sell";
   return "hold";
