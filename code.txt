@@ -3,4 +3,4 @@ crypto-bot-app/
 ├── server.js
 ├── package.json
 ├── frontend/
-│   └── index.html
+└── index.html
