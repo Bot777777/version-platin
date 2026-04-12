@@ -20,7 +20,12 @@ let symbols = ["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","ADAUSDT","DOGEUSDT","BNB
 
 let coins = {};
 symbols.forEach(s=>{
-  coins[s] = { price: 0, history: [], buys: [], last: 0 };
+coins[s] = {
+  price: 100 + Math.random()*1000,
+  history: [],
+  buys: [],
+  last: 100
+};
 });
 
 // 📜 TRADE LOG
@@ -48,9 +53,19 @@ async function fetchPrices(){
     console.log("API Fehler");
   }
 }
-setInterval(fetchPrices, 4000);
-fetchPrices();
+// Fallback Markt (läuft IMMER)
+setInterval(() => {
+  for (let s in coins) {
+    let change = (Math.random() - 0.5) * 0.005;
 
+    coins[s].last = coins[s].price;
+    coins[s].price *= (1 + change);
+
+    coins[s].history.push(coins[s].price);
+    if (coins[s].history.length > 60)
+      coins[s].history.shift();
+  }
+}, 2000);
 // 🧠 AI
 function aiDecision(h){
   if(h.length < 25) return "hold";
