@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Crypto Bot</title>
+</head>
+<body style="font-family: Arial; text-align:center; padding:20px">
+
+<h2>📊 Crypto Trading Bot</h2>
+
+<button onclick="start()">Start</button>
+<button onclick="stop()">Stop</button>
+
+<p id="status">Status: -</p>
+<p id="balance">Balance: -</p>
+
+<script>
+async function update() {
+  const res = await fetch("/status");
+  const data = await res.json();
+
+  document.getElementById("status").innerText =
+    "Status: " + (data.running ? "Running" : "Stopped");
+
+  document.getElementById("balance").innerText =
+    "Balance: $" + data.balance.toFixed(2);
+}
+
+async function start() {
+  await fetch("/start", { method: "POST" });
+}
+
+async function stop() {
+  await fetch("/stop", { method: "POST" });
+}
+
+setInterval(update, 2000);
+update();
+</script>
+
+</body>
+</html>
