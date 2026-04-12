@@ -5,117 +5,128 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 💰 Startkapital
-let balance = 250000;
+let balance = 10000;
+let running = true;
 
-// 📊 Coins
 let coins = {
-  BTC: { price: 50000, owned: 0 },
-  ETH: { price: 3000, owned: 0 },
-  SOL: { price: 100, owned: 0 }
+  BTC: { price: 50000, owned: 0, history: [] },
+  ETH: { price: 3000, owned: 0, history: [] },
+  SOL: { price: 100, owned: 0, history: [] }
 };
 
-// 📈 Preis Simulation
+// 📊 Preis Simulation
 setInterval(() => {
   for (let c in coins) {
-    let change = (Math.random() - 0.5) * 0.02;
+    let change = (Math.random() - 0.5) * 0.01;
     coins[c].price *= (1 + change);
+
+    coins[c].history.push(coins[c].price);
+    if (coins[c].history.length > 30) coins[c].history.shift();
   }
-}, 2000);
+}, 1500);
+
+// 🧠 KI Entscheidung
+function aiDecision(coin) {
+  const h = coin.history;
+  if (h.length < 10) return "hold";
+
+  const short = h.slice(-5).reduce((a,b)=>a+b)/5;
+  const long = h.slice(-10).reduce((a,b)=>a+b)/10;
+
+  if (short > long * 1.002) return "buy";
+  if (short < long * 0.998) return "sell";
+  return "hold";
+}
+
+// 🤖 BOT LOOP
+setInterval(() => {
+  if (!running) return;
+
+  for (let c in coins) {
+    const coin = coins[c];
+    const decision = aiDecision(coin);
+
+    if (decision === "buy" && balance >= coin.price) {
+      balance -= coin.price;
+      coin.owned += 1;
+    }
+
+    if (decision === "sell" && coin.owned > 0) {
+      balance += coin.price;
+      coin.owned -= 1;
+    }
+  }
+}, 3000);
 
 // API
 app.get("/data", (req, res) => {
-  res.json({ balance, coins });
+  res.json({ balance, coins, running });
 });
 
-app.post("/buy", (req, res) => {
-  const { coin } = req.body;
-  const price = coins[coin].price;
-
-  if (balance >= price) {
-    balance -= price;
-    coins[coin].owned += 1;
-  }
-
-  res.json({ success: true });
+app.post("/toggle", (req, res) => {
+  running = !running;
+  res.json({ running });
 });
 
-app.post("/sell", (req, res) => {
-  const { coin } = req.body;
-  const price = coins[coin].price;
-
-  if (coins[coin].owned > 0) {
-    coins[coin].owned -= 1;
-    balance += price;
-  }
-
-  res.json({ success: true });
-});
-
-// 🖥️ UI
+// UI
 app.get("/", (req, res) => {
   res.send(`
-  <html>
-  <body style="font-family:Arial;background:#111;color:#fff;text-align:center">
+<html>
+<body style="margin:0;background:#0b0f14;color:white;font-family:Arial">
 
-  <h1>🚀 PRO Crypto Trading App</h1>
+<div style="padding:20px;background:#111">
+  <h2>🤖 AI Trading Bot PRO</h2>
+  <h3 id="balance"></h3>
+  <button onclick="toggle()">Bot Start/Stop</button>
+</div>
 
-  <h2 id="balance"></h2>
+<div id="coins" style="display:flex;flex-wrap:wrap"></div>
 
-  <div id="coins"></div>
+<script>
+let lastPrices = {};
 
-  <script>
-  async function load(){
-    const res = await fetch('/data');
-    const data = await res.json();
+async function load(){
+  const res = await fetch('/data');
+  const data = await res.json();
 
-    document.getElementById('balance').innerText =
-      'Balance: $' + data.balance.toFixed(2);
+  document.getElementById('balance').innerText =
+    'Balance: $' + data.balance.toFixed(2);
 
-    let html = '';
+  let html = '';
 
-    for (let c in data.coins){
-      const coin = data.coins[c];
+  for (let c in data.coins){
+    const coin = data.coins[c];
+    const last = lastPrices[c] || coin.price;
 
-      html += \`
-        <div style="margin:20px;padding:20px;border:1px solid #444">
-          <h2>\${c}</h2>
-          <p>Preis: $\${coin.price.toFixed(2)}</p>
-          <p>Besitz: \${coin.owned}</p>
+    const color = coin.price > last ? 'lime' :
+                  coin.price < last ? 'red' : 'white';
 
-          <button onclick="buy('\${c}')">Kaufen</button>
-          <button onclick="sell('\${c}')">Verkaufen</button>
-        </div>
-      \`;
-    }
+    lastPrices[c] = coin.price;
 
-    document.getElementById('coins').innerHTML = html;
+    html += \`
+    <div style="flex:1 1 300px;margin:15px;padding:20px;background:#161b22;border-radius:10px">
+      <h2>\${c}</h2>
+      <p style="color:\${color}">$ \${coin.price.toFixed(2)}</p>
+      <p>Owned: \${coin.owned}</p>
+    </div>
+    \`;
   }
 
-  async function buy(c){
-    await fetch('/buy',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({coin:c})
-    });
-  }
+  document.getElementById('coins').innerHTML = html;
+}
 
-  async function sell(c){
-    await fetch('/sell',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({coin:c})
-    });
-  }
+async function toggle(){
+  await fetch('/toggle',{method:'POST'});
+}
 
-  setInterval(load,2000);
-  load();
-  </script>
+setInterval(load,1500);
+load();
+</script>
 
-  </body>
-  </html>
-  `);
+</body>
+</html>
+`);
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("🚀 PRO APP läuft"));
+app.listen(PORT, () => console.log("🤖 AI BOT läuft"));
