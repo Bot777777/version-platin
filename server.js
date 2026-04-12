@@ -132,7 +132,7 @@ app.get("/data",(req,res)=>{
     time: Date.now()
   });app.get("/", (req,res)=>{
 res.send(`
-<html>
+
 <body style="background:#0b0f14;color:white;font-family:Arial">
 
 <h2>🚀 Trading App</h2>
