@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json());
 
 // 👤 User
-let user = ;
+let user = ,
   balance:  10000,
   portfolio: {}
 };
