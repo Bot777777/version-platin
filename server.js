@@ -24,8 +24,19 @@ coins[s] = {
   price: 100 + Math.random()*1000,
   history: [],
   buys: [],
-  last: 100
-};
+  last: 100,
+  setInterval(() => {
+  for (let s in coins) {
+    let change = (Math.random() - 0.5) * 0.005;
+
+    coins[s].last = coins[s].price;
+    coins[s].price *= (1 + change);
+
+    coins[s].history.push(coins[s].price);
+    if (coins[s].history.length > 50)
+      coins[s].history.shift();
+  }
+}, 2000);};
 });
 
 // 📜 TRADE LOG
