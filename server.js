@@ -20,17 +20,12 @@ let symbols = ["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","ADAUSDT","DOGEUSDT","BNB
 
 let coins = {};
 setInterval(() => {
-  for (let s in coins) {
-    let change = (Math.random() - 0.5) * 0.005;
-
-    coins[s].last = coins[s].price;
-    coins[s].price *= (1 + change);
-
-    coins[s].history.push(coins[s].price);
-    if (coins[s].history.length > 50)
-      coins[s].history.shift();
+  for (let c in coins) {
+    if (!coins[c].price || coins[c].price === 0) {
+      coins[c].price = 100 + Math.random()*1000;
+    }
   }
-}, 2000);
+}, 1000);
 symbols.forEach(s=>{
 coins[s] = {
   price: 100 + Math.random()*1000,
