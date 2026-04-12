@@ -1,113 +1,116 @@
 const express = require("express");
 const cors = require("cors");
+const ccxt = require("ccxt");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-let balance = 10000;
-let running = true;
-
-let coins = {
-  BTC: { price: 50000, owned: 0, history: [] },
-  ETH: { price: 3000, owned: 0, history: [] },
-  SOL: { price: 100, owned: 0, history: [] }
+// 👤 User
+let user = {
+  balance: 10000,
+  portfolio: {}
 };
 
-// 📊 Preis Simulation
-setInterval(() => {
-  for (let c in coins) {
-    let change = (Math.random() - 0.5) * 0.01;
-    coins[c].price *= (1 + change);
+// Coins
+const symbols = ["BTC/USDT","ETH/USDT","SOL/USDT","XRP/USDT","ADA/USDT"];
 
-    coins[c].history.push(coins[c].price);
-    if (coins[c].history.length > 30) coins[c].history.shift();
+const exchange = new ccxt.binance();
+
+let market = {};
+
+// 📡 Live Daten holen
+async function updateMarket(){
+  try{
+    for (let s of symbols){
+      const ticker = await exchange.fetchTicker(s);
+      market[s] = ticker.last;
+    }
+  }catch(e){
+    console.log("API Fehler");
   }
-}, 1500);
+}
+setInterval(updateMarket, 5000);
+updateMarket();
 
-// 🧠 KI Entscheidung
-function aiDecision(coin) {
-  const h = coin.history;
-  if (h.length < 10) return "hold";
+// 🧠 AI BOT
+function aiDecision(price, lastPrice){
+  if (!lastPrice) return "hold";
 
-  const short = h.slice(-5).reduce((a,b)=>a+b)/5;
-  const long = h.slice(-10).reduce((a,b)=>a+b)/10;
-
-  if (short > long * 1.002) return "buy";
-  if (short < long * 0.998) return "sell";
+  if (price > lastPrice * 1.002) return "buy";
+  if (price < lastPrice * 0.998) return "sell";
   return "hold";
 }
 
-// 🤖 BOT LOOP
-setInterval(() => {
-  if (!running) return;
+let lastPrices = {};
 
-  for (let c in coins) {
-    const coin = coins[c];
-    const decision = aiDecision(coin);
+setInterval(()=>{
+  for (let s of symbols){
+    const price = market[s];
+    if (!price) continue;
 
-    if (decision === "buy" && balance >= coin.price) {
-      balance -= coin.price;
-      coin.owned += 1;
+    const decision = aiDecision(price, lastPrices[s]);
+
+    if (decision === "buy" && user.balance > price){
+      user.balance -= price;
+      user.portfolio[s] = (user.portfolio[s] || 0) + 1;
     }
 
-    if (decision === "sell" && coin.owned > 0) {
-      balance += coin.price;
-      coin.owned -= 1;
+    if (decision === "sell" && user.portfolio[s] > 0){
+      user.balance += price;
+      user.portfolio[s] -= 1;
     }
+
+    lastPrices[s] = price;
   }
-}, 3000);
+}, 4000);
 
 // API
-app.get("/data", (req, res) => {
-  res.json({ balance, coins, running });
-});
-
-app.post("/toggle", (req, res) => {
-  running = !running;
-  res.json({ running });
+app.get("/data",(req,res)=>{
+  res.json({user, market});
 });
 
 // UI
-app.get("/", (req, res) => {
-  res.send(`
+app.get("/", (req,res)=>{
+res.send(`
 <html>
 <body style="margin:0;background:#0b0f14;color:white;font-family:Arial">
 
-<div style="padding:20px;background:#111">
-  <h2>🤖 AI Trading Bot PRO</h2>
+<div style="padding:15px;background:#111;display:flex;justify-content:space-between">
+  <h2>🤖 AI Trading Terminal</h2>
   <h3 id="balance"></h3>
-  <button onclick="toggle()">Bot Start/Stop</button>
 </div>
 
 <div id="coins" style="display:flex;flex-wrap:wrap"></div>
 
 <script>
-let lastPrices = {};
+let last = {};
 
 async function load(){
   const res = await fetch('/data');
   const data = await res.json();
 
   document.getElementById('balance').innerText =
-    'Balance: $' + data.balance.toFixed(2);
+    '💰 $' + data.user.balance.toFixed(2);
 
   let html = '';
 
-  for (let c in data.coins){
-    const coin = data.coins[c];
-    const last = lastPrices[c] || coin.price;
+  for (let s in data.market){
+    const price = data.market[s];
+    const prev = last[s] || price;
 
-    const color = coin.price > last ? 'lime' :
-                  coin.price < last ? 'red' : 'white';
+    const color = price > prev ? 'lime' :
+                  price < prev ? 'red' : 'white';
 
-    lastPrices[c] = coin.price;
+    last[s] = price;
+
+    const owned = data.user.portfolio[s] || 0;
 
     html += \`
     <div style="flex:1 1 300px;margin:15px;padding:20px;background:#161b22;border-radius:10px">
-      <h2>\${c}</h2>
-      <p style="color:\${color}">$ \${coin.price.toFixed(2)}</p>
-      <p>Owned: \${coin.owned}</p>
+      <h3>\${s}</h3>
+      <p style="color:\${color}">$ \${price.toFixed(2)}</p>
+      <p>Owned: \${owned}</p>
     </div>
     \`;
   }
@@ -115,11 +118,7 @@ async function load(){
   document.getElementById('coins').innerHTML = html;
 }
 
-async function toggle(){
-  await fetch('/toggle',{method:'POST'});
-}
-
-setInterval(load,1500);
+setInterval(load,3000);
 load();
 </script>
 
@@ -129,4 +128,4 @@ load();
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("🤖 AI BOT läuft"));
+app.listen(PORT, ()=>console.log("🚀 LIVE BOT läuft"));
