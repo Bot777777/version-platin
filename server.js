@@ -5,25 +5,28 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// 👤 USER
 let user = {
   balance: 10000,
   portfolio: {},
   loggedIn: false
 };
 
+// 🤖 BOT STATUS
 let botRunning = false;
 
-// Coins (mehr)
+// 🪙 COINS
 let symbols = ["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","ADAUSDT","DOGEUSDT","BNBUSDT"];
 
 let coins = {};
-
-// Init
 symbols.forEach(s=>{
   coins[s] = { price: 0, history: [], buys: [], last: 0 };
 });
 
-// 🌍 LIVE Preise von Binance (ohne API Key)
+// 📜 TRADE LOG
+let tradeLog = [];
+
+// 🌍 LIVE PREISE (Binance)
 async function fetchPrices(){
   try{
     const res = await fetch("https://api.binance.com/api/v3/ticker/price");
@@ -41,24 +44,30 @@ async function fetchPrices(){
           coins[item.symbol].history.shift();
       }
     });
-
   }catch(e){
     console.log("API Fehler");
   }
 }
-
 setInterval(fetchPrices, 4000);
 fetchPrices();
 
-// 🧠 AI Bot (aggressiver)
+// 🧠 AI
 function aiDecision(h){
-  if(h.length < 20) return "hold";
+  if(h.length < 25) return "hold";
 
   let short = h.slice(-5).reduce((a,b)=>a+b)/5;
-  let long = h.slice(-20).reduce((a,b)=>a+b)/20;
+  let mid = h.slice(-10).reduce((a,b)=>a+b)/10;
+  let long = h.slice(-25).reduce((a,b)=>a+b)/25;
 
-  if(short > long * 1.0015) return "buy";
-  if(short < long * 0.9985) return "sell";
+  let volatility = Math.abs(short - long);
+
+  if(short > mid && mid > long && volatility > long*0.0015){
+    return "buy";
+  }
+
+  if(short < mid && mid < long && volatility > long*0.0015){
+    return "sell";
+  }
 
   return "hold";
 }
@@ -75,35 +84,48 @@ setInterval(()=>{
       user.balance -= coin.price;
       user.portfolio[s] = (user.portfolio[s]||0)+1;
       coin.buys.push(coin.price);
+
+      tradeLog.unshift("BUY "+s+" @ "+coin.price.toFixed(2));
     }
 
     if(decision==="sell" && user.portfolio[s]>0){
       user.balance += coin.price;
       user.portfolio[s]--;
       coin.buys.shift();
+
+      tradeLog.unshift("SELL "+s+" @ "+coin.price.toFixed(2));
     }
   }
 
 },3000);
 
-// API
+// 🔌 API
 app.get("/data",(req,res)=>{
-  res.json({user, coins, botRunning});
+  res.json({
+    user,
+    coins,
+    botRunning,
+    tradeLog,
+    time: Date.now()
+  });
 });
 
 app.post("/login",(req,res)=>{
   user.loggedIn = true;
-  res.json({ok:true});
+  console.log("USER LOGGED IN");
+  res.json({loggedIn:true});
 });
 
 app.post("/bot/start",(req,res)=>{
   botRunning = true;
-  res.json({ok:true});
+  console.log("BOT STARTED");
+  res.json({running:true});
 });
 
 app.post("/bot/stop",(req,res)=>{
   botRunning = false;
-  res.json({ok:true});
+  console.log("BOT STOPPED");
+  res.json({running:false});
 });
 
 // 💰 MANUELL SELL
@@ -114,20 +136,26 @@ app.post("/sell",(req,res)=>{
     user.balance += coins[symbol].price;
     user.portfolio[symbol]--;
     coins[symbol].buys.shift();
+
+    tradeLog.unshift("MANUAL SELL "+symbol);
   }
 
   res.json({ok:true});
 });
 
-// UI
+// 🌐 UI
 app.get("/", (req,res)=>{
 res.send(`
 <html>
 <body style="margin:0;background:#0b0f14;color:white;font-family:Arial">
 
-<div style="padding:10px;background:#111;display:flex;justify-content:space-between">
-  <h2>🚀 PRO TERMINAL V2</h2>
-  <div>
+<div style="padding:10px;background:#111">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <h2>🚀 PRO TERMINAL V2.1</h2>
+    <div id="balance" style="font-size:18px"></div>
+  </div>
+
+  <div style="margin-top:10px">
     <button onclick="login()">Login</button>
     <button onclick="start()">Start</button>
     <button onclick="stop()">Stop</button>
@@ -135,16 +163,18 @@ res.send(`
 </div>
 
 <div style="padding:10px;background:#222">
-  <span id="status"></span> |
-  <span id="balance"></span> |
+  <span id="status" style="font-weight:bold"></span> |
   🌍 EU: <span id="eu"></span> |
   🇺🇸 US: <span id="us"></span> |
-  🇨🇳 CN: <span id="cn"></span>
+  🇨🇳 CN: <span id="cn"></span> |
+  <span id="market"></span>
 </div>
 
 <canvas id="chart" width="400" height="200"></canvas>
 
 <div id="coins" style="display:flex;flex-wrap:wrap"></div>
+
+<div id="log" style="padding:10px;background:#111"></div>
 
 <script>
 let last = {};
@@ -162,13 +192,13 @@ function drawChart(){
 
     ctx.strokeStyle = color;
     ctx.beginPath();
-    ctx.moveTo(x,200-v.high/100);
-    ctx.lineTo(x,200-v.low/100);
+    ctx.moveTo(x,200 - v.high/1000);
+    ctx.lineTo(x,200 - v.low/1000);
     ctx.stroke();
 
     ctx.fillStyle = color;
-    ctx.fillRect(x-2,200-Math.max(v.open,v.close)/100,4,
-      Math.abs(v.open-v.close)/100 + 1);
+    ctx.fillRect(x-2,200 - Math.max(v.open,v.close)/1000,4,
+      Math.abs(v.open-v.close)/1000 + 1);
   });
 }
 
@@ -185,13 +215,24 @@ async function load(){
   const data = await res.json();
 
   balance.innerText = "💰 $" + data.user.balance.toFixed(2);
-  status.innerText = data.botRunning ? "🟢 BOT RUNNING" : "🔴 STOPPED";
+
+  if(data.botRunning){
+    status.innerText = "🟢 BOT AKTIV";
+    status.style.color = "lime";
+  }else{
+    status.innerText = "🔴 BOT INAKTIV";
+    status.style.color = "red";
+  }
 
   let html='';
+
+  let trend = 0;
 
   for(let s in data.coins){
     let coin = data.coins[s];
     let prev = last[s] || coin.price;
+
+    trend += coin.price - prev;
 
     let color = coin.price > prev ? "lime" :
                 coin.price < prev ? "red" : "white";
@@ -231,6 +272,15 @@ async function load(){
   }
 
   coins.innerHTML = html;
+
+  market.innerText = trend > 0 ? "📈 Markt bullish" : "📉 Markt bearish";
+
+  let logHTML = "<h3>Trades</h3>";
+  data.tradeLog.slice(0,10).forEach(t=>{
+    logHTML += "<p>"+t+"</p>";
+  });
+
+  document.getElementById("log").innerHTML = logHTML;
 }
 
 async function sell(s){
@@ -241,9 +291,20 @@ async function sell(s){
   });
 }
 
-async function login(){ await fetch('/login',{method:'POST'}); }
-async function start(){ await fetch('/bot/start',{method:'POST'}); }
-async function stop(){ await fetch('/bot/stop',{method:'POST'}); }
+async function login(){
+  await fetch('/login',{method:'POST'});
+  alert("Eingeloggt");
+}
+
+async function start(){
+  await fetch('/bot/start',{method:'POST'});
+  load();
+}
+
+async function stop(){
+  await fetch('/bot/stop',{method:'POST'});
+  load();
+}
 
 setInterval(load,3000);
 setInterval(updateClock,1000);
@@ -256,4 +317,4 @@ load();
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, ()=>console.log("🚀 V2 LIVE läuft"));
+app.listen(PORT, ()=>console.log("🚀 V2.1 PRO läuft"));
