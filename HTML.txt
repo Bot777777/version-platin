@@ -4,8 +4,28 @@
   <title>Crypto Bot</title>
 </head>
 <body style="font-family: Arial; text-align:center; padding:20px">
+<div id="coins"></div><script>
+async function load(){
+  const res = await fetch('/data');
+  const data = await res.json();
 
-<h2>📊 Crypto Trading Bot</h2>
+  let html = '';
+
+  for(let c in data.coins){
+    html += `
+      <div style="background:#222;padding:10px;margin:10px;border-radius:10px">
+        <h3>${c}</h3>
+        <p>$ ${data.coins[c].price}</p>
+      </div>
+    `;
+  }
+
+  document.getElementById("coins").innerHTML = html;
+}
+
+setInterval(load,2000);
+load();
+</script><h2>📊 ScontactS--Crypto Trading Bot</h2>
 
 <button onclick="start()">Start</button>
 <button onclick="stop()">Stop</button>
