@@ -237,64 +237,32 @@ async function load(){
   const res = await fetch('/data');
   const data = await res.json();
 
-  balance.innerText = "💰 $" + data.user.balance.toFixed(2);
+  let html = '';
 
-  if(data.botRunning){
-    status.innerText = "🟢 BOT AKTIV";
-    status.style.color = "lime";
-  }else{
-    status.innerText = "🔴 BOT INAKTIV";
-    status.style.color = "red";
+  // 👉 DEBUG (falls coins fehlt)
+  if(!data.coins){
+    document.getElementById("coins").innerHTML = "KEINE COINS!";
+    return;
   }
 
-  let html='';
+  for(let c in data.coins){
+    let coin = data.coins[c];
 
-  let trend = 0;
-
-  for(let s in data.coins){
-    let coin = data.coins[s];
-    let prev = last[s] || coin.price;
-
-    trend += coin.price - prev;
-
-    let color = coin.price > prev ? "lime" :
-                coin.price < prev ? "red" : "white";
-
-    last[s] = coin.price;
-
-    // Candles (BTC)
-    if(s==="BTCUSDT"){
-      let h = coin.history;
-      if(h.length>5){
-        chartData.push({
-          open:h[h.length-5],
-          close:h[h.length-1],
-          high:Math.max(...h.slice(-5)),
-          low:Math.min(...h.slice(-5))
-        });
-        if(chartData.length>40) chartData.shift();
-        drawChart();
-      }
-    }
-
-    let owned = data.user.portfolio[s]||0;
-    let buys = coin.buys;
-
-    let avg = buys.length ?
-      (buys.reduce((a,b)=>a+b)/buys.length).toFixed(2) : "-";
-
-    html += \`
-    <div style="flex:1 1 250px;margin:10px;padding:15px;background:#161b22;border-radius:10px">
-      <h3>\${s}</h3>
-      <p style="color:\${color}">$ \${coin.price.toFixed(4)}</p>
-      <p>Owned: \${owned}</p>
-      <p>Buy: \${avg}</p>
-      <button onclick="sell('\${s}')">Sell</button>
-    </div>
-    \`;
+    html += `
+      <div style="
+        background:#222;
+        padding:15px;
+        margin:10px;
+        border-radius:10px
+      ">
+        <h3>${c}</h3>
+        <p>$ ${coin.price}</p>
+      </div>
+    `;
   }
 
-  coins.innerHTML = html;
+  document.getElementById("coins").innerHTML = html;
+}  coins.innerHTML = html;
 
   market.innerText = trend > 0 ? "📈 Markt bullish" : "📉 Markt bearish";
 
