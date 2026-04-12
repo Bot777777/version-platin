@@ -64,7 +64,141 @@ setInterval(() => {
 }, 3000);
 
 // API
-app.get("/data",(req,res)=>{
+app.get(<html>
+<body style="margin:0;background:#0b0f14;color:white;font-family:Arial">
+
+<!-- HEADER -->
+<div style="padding:15px;background:#111;display:flex;justify-content:space-between;align-items:center">
+  <h2>🚀 PRO TERMINAL</h2>
+  <div id="balance" style="font-size:18px"></div>
+</div>
+
+<!-- CONTROLS -->
+<div style="padding:10px;background:#222;display:flex;gap:10px;flex-wrap:wrap">
+  <button onclick="login()">Login</button>
+  <button onclick="start()">Start</button>
+  <button onclick="stop()">Stop</button>
+
+  <span id="status" style="margin-left:20px;font-weight:bold"></span>
+
+  🌍 EU: <span id="eu"></span>
+  🇺🇸 US: <span id="us"></span>
+  🇨🇳 CN: <span id="cn"></span>
+</div>
+
+<!-- COINS GRID -->
+<div id="coins" style="
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap:15px;
+  padding:15px;
+"></div>
+
+<!-- TRADE LOG -->
+<div id="log" style="padding:15px;background:#111"></div>
+
+<script>
+let last = {};
+
+function updateClock(){
+  const now = new Date();
+
+  eu.innerText = now.toLocaleTimeString("de-DE",{timeZone:"Europe/Berlin"});
+  us.innerText = now.toLocaleTimeString("en-US",{timeZone:"America/New_York"});
+  cn.innerText = now.toLocaleTimeString("zh-CN",{timeZone:"Asia/Shanghai"});
+}
+
+async function load(){
+  const res = await fetch('/data');
+  const data = await res.json();
+
+  balance.innerText = "💰 $" + data.user.balance.toFixed(2);
+
+  if(data.botRunning){
+    status.innerText = "🟢 BOT AKTIV";
+    status.style.color = "lime";
+  }else{
+    status.innerText = "🔴 BOT INAKTIV";
+    status.style.color = "red";
+  }
+
+  let html = '';
+
+  for(let c in data.coins){
+    let coin = data.coins[c];
+    let prev = last[c] || coin.price;
+
+    let color = coin.price > prev ? "lime" :
+                coin.price < prev ? "red" : "white";
+
+    last[c] = coin.price;
+
+    let owned = data.user.portfolio[c] || 0;
+    let buys = coin.buys || [];
+
+    let avg = buys.length
+      ? (buys.reduce((a,b)=>a+b)/buys.length).toFixed(2)
+      : "-";
+
+    html += \`
+    <div style="
+      background:#161b22;
+      padding:15px;
+      border-radius:10px;
+      box-shadow:0 0 10px rgba(0,0,0,0.5)
+    ">
+      <h3>\${c}</h3>
+      <p style="color:\${color}">$ \${coin.price.toFixed(4)}</p>
+      <p>Owned: \${owned}</p>
+      <p>Buy: \${avg}</p>
+
+      <button onclick="sell('\${c}')">Sell</button>
+    </div>
+    \`;
+  }
+
+  coins.innerHTML = html;
+
+  // TRADE LOG
+  let logHTML = "<h3>Trades</h3>";
+  (data.tradeLog || []).slice(0,10).forEach(t=>{
+    logHTML += "<p>"+t+"</p>";
+  });
+
+  log.innerHTML = logHTML;
+}
+
+async function sell(c){
+  await fetch('/sell',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({symbol:c})
+  });
+}
+
+async function login(){
+  await fetch('/login',{method:'POST'});
+  alert("Eingeloggt");
+}
+
+async function start(){
+  await fetch('/bot/start',{method:'POST'});
+  load();
+}
+
+async function stop(){
+  await fetch('/bot/stop',{method:'POST'});
+  load();
+}
+
+setInterval(load,2000);
+setInterval(updateClock,1000);
+load();
+</script>
+
+</body>
+</html>
+`);/data",(req,res)=>{
 res.json({user, coins, botRunning, tradeLog});});
 
 app.post("/bot/start",(req,res)=>{
