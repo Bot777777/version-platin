@@ -6,6 +6,7 @@ app.use(cors());
 app.use(express.json());
 
 // USER
+let tradeLog = ();
 let user = {
   balance: 10000,
   portfolio: {}
@@ -47,13 +48,14 @@ setInterval(() => {
     let short = h.slice(-3).reduce((a,b)=>a+b)/3;
     let long = h.slice(-8).reduce((a,b)=>a+b)/8;
 
-    if (short > long * 1.002 && user.balance > coin.price) {
+    if (short > long * 1.001 && user.balance > coin.price) {
       user.balance -= coin.price;
+      tradeLog.unshift("BUY " + c + " @ " + coin.price.toFixed(2));
       user.portfolio[c] = (user.portfolio[c] || 0) + 1;
       coin.buys.push(coin.price);
     }
 
-    if (short < long * 0.998 && user.portfolio[c] > 0) {
+    if (short < long * 0.999 && user.portfolio[c] > 0) {
       user.balance += coin.price;
       user.portfolio[c] -= 1;
       coin.buys.shift();
@@ -63,8 +65,7 @@ setInterval(() => {
 
 // API
 app.get("/data",(req,res)=>{
-  res.json({user, coins, botRunning});
-});
+res.json({user, coins, botRunning, tradeLog});});
 
 app.post("/bot/start",(req,res)=>{
   botRunning = true;
@@ -84,6 +85,7 @@ app.post("/sell",(req,res)=>{
     user.balance += coins[symbol].price;
     user.portfolio[symbol]--;
     coins[symbol].buys.shift();
+    tradeLog.unshift("SELL "+s+" @ "+coin.price.toFixed(2));
   }
 
   res.json({ok:true});
@@ -128,8 +130,8 @@ async function load(){
     last[c] = coin.price;
 
     html += \`
-    <div style="flex:1 1 200px;margin:10px;padding:10px;background:#161b22">
-      <h3>\${c}</h3>
+  <div id="log" style="padding:10px;background:#111"></div>
+  <h3>\${c}</h3>
       <p style="color:\${color}">$ \${coin.price.toFixed(4)}</p>
       <p>Owned: \${data.user.portfolio[c]||0}</p>
       <button onclick="sell('\${c}')">Sell</button>
@@ -153,6 +155,13 @@ async function stop(){ await fetch('/bot/stop',{method:'POST'}); }
 
 setInterval(load,2000);
 load();
+let logHTML = "<h3>Trades</h3>";
+
+(data.tradeLog || []).slice(0,10).forEach(t=>{
+  logHTML += "<p>"+t+"</p>";
+});
+
+document.getElementById("log").innerHTML = logHTML;
 </script>
 
 <button onclick="start()">Start</button>
