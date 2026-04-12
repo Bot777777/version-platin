@@ -47,7 +47,8 @@ async function fetchPrices(){
         coins[item.symbol].history.push(price);
         if(coins[item.symbol].history.length > 60)
           coins[item.symbol].history.shift();
-      }
+        setInterval(fetchPrices, 4000);
+fetchPrices();      }
     });
   }catch(e){
     console.log("API Fehler");
