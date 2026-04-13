@@ -36,14 +36,14 @@ setInterval(()=>{
   for(let s in coins){
     let c = coins[s];
 
-    let trend = Math.sin(Date.now()/5000);
-    let noise = (Math.random()-0.5)*0.01;
+    let trend = Math.sin(Date.now()/4000);
+    let noise = (Math.random()-0.5)*0.008;
 
     let open = c.price;
-    let close = open * (1 + trend*0.005 + noise);
+    let close = open * (1 + trend*0.003 + noise);
 
-    let high = Math.max(open, close)*(1+Math.random()*0.01);
-    let low = Math.min(open, close)*(1-Math.random()*0.01);
+    let high = Math.max(open, close)*(1+Math.random()*0.005);
+    let low = Math.min(open, close)*(1-Math.random()*0.005);
 
     c.price = close;
 
@@ -53,33 +53,26 @@ setInterval(()=>{
     c.history.push(close);
     if(c.history.length > 60) c.history.shift();
   }
-},2000);
+},1500);
 
 
-// 🔥 SMART AI
+// 🔥 SCALPING AI
 function aiDecision(h){
-  if(h.length < 30) return "hold";
+  if(h.length < 20) return "hold";
 
-  let short = h.slice(-5).reduce((a,b)=>a+b)/5;
-  let mid   = h.slice(-15).reduce((a,b)=>a+b)/15;
-  let long  = h.slice(-30).reduce((a,b)=>a+b)/30;
+  let short = h.slice(-3).reduce((a,b)=>a+b)/3;
+  let long = h.slice(-15).reduce((a,b)=>a+b)/15;
 
-  let momentum = (short - mid) / mid;
-  let trend    = (mid - long) / long;
+  let diff = (short - long) / long;
 
-  let strength = momentum + trend;
-
-  if(strength > 0.015) return "strong_buy";
-  if(strength > 0.005) return "buy";
-
-  if(strength < -0.015) return "strong_sell";
-  if(strength < -0.005) return "sell";
+  if(diff > 0.002) return "buy";
+  if(diff < -0.002) return "sell";
 
   return "hold";
 }
 
 
-// 🤖 BOT
+// 🤖 BOT (SCALPING)
 setInterval(()=>{
   if(!botRunning) return;
 
@@ -89,9 +82,8 @@ setInterval(()=>{
     let pos = user.positions[s];
 
     // BUY
-    if(!pos && (decision==="strong_buy" || decision==="buy")){
-      let risk = decision==="strong_buy" ? 0.4 : 0.25;
-      let invest = user.balance * risk;
+    if(!pos && decision==="buy"){
+      let invest = user.balance * 0.1;
 
       if(invest > coin.price){
         let amount = invest / coin.price;
@@ -101,53 +93,51 @@ setInterval(()=>{
 
         user.positions[s] = {
           entry: coin.price,
-          amount,
-          stop: coin.price * 0.97,
-          target: coin.price * 1.04
+          amount
         };
 
-        tradeLog.unshift("🚀 BUY "+s);
+        tradeLog.unshift("🟢 BUY "+s);
       }
     }
 
-    // POSITION MANAGEMENT
+    // SELL
     if(pos){
-      let profit = (coin.price - pos.entry) / pos.entry;
+      let change = (coin.price - pos.entry) / pos.entry;
 
-      // QUICK PROFIT
-      if(profit > 0.03){
+      // 💰 Gewinn schnell sichern
+      if(change > 0.005){
         user.balance += coin.price * pos.amount;
+
         delete user.positions[s];
-        user.portfolio[s]=0;
-        tradeLog.unshift("💰 QUICK PROFIT "+s);
+        user.portfolio[s] = 0;
+
+        tradeLog.unshift("💰 +"+(change*100).toFixed(2)+"% "+s);
         continue;
       }
 
-      // STOP LOSS
-      if(coin.price <= pos.stop){
+      // 🛑 Stop Loss
+      if(change < -0.01){
         user.balance += coin.price * pos.amount;
-        delete user.positions[s];
-        user.portfolio[s]=0;
-        tradeLog.unshift("🛑 STOP LOSS "+s);
-        continue;
-      }
 
-      // TRAILING STOP
-      if(profit > 0.02){
-        pos.stop = coin.price * 0.98;
+        delete user.positions[s];
+        user.portfolio[s] = 0;
+
+        tradeLog.unshift("🛑 LOSS "+s);
+        continue;
       }
     }
   }
 
-  // PROFIT LOCK
+  // 💎 PROFIT LOCK
   if(user.balance > 10000){
     let profit = user.balance - 10000;
     user.balance = 10000;
     user.profitBank += profit;
+
     tradeLog.unshift("💎 PROFIT "+profit.toFixed(2));
   }
 
-},2000);
+},1200);
 
 
 // API
@@ -175,8 +165,9 @@ app.post("/sell",(req,res)=>{
 
   if(user.portfolio[symbol] > 0){
     user.balance += coins[symbol].price * user.portfolio[symbol];
-    user.portfolio[symbol]=0;
+    user.portfolio[symbol] = 0;
     delete user.positions[symbol];
+
     tradeLog.unshift("MANUAL SELL "+symbol);
   }
 
@@ -192,7 +183,7 @@ res.send(`
 
 <div style="max-width:1200px;margin:auto">
 
-<h2>🚀 PRO TERMINAL V5</h2>
+<h2>🚀 PRO TERMINAL V5 (SCALPER)</h2>
 
 <div>
 Balance: $<span id="balance"></span> |
@@ -257,42 +248,15 @@ async function load(){
 
     html += \`
     <div style="background:#1a1f26;padding:15px;margin:15px;border-radius:12px">
-      <div onclick="selectCoin('\${c}')" style="cursor:pointer">
-        <h2>\${c}</h2>
-        <p>Price: $\${coin.price.toFixed(2)}</p>
-        <p>Owned: \${data.user.portfolio[c]||0}</p>
-      </div>
-
+      <h2>\${c}</h2>
+      <p>Price: $\${coin.price.toFixed(2)}</p>
+      <p>Owned: \${data.user.portfolio[c]||0}</p>
       <button onclick="sell('\${c}')">SELL</button>
-
-      \${selectedCoin===c ? '<canvas id="chart_'+c+'" width="800" height="300"></canvas>' : ''}
     </div>
     \`;
   }
 
   coins.innerHTML = html;
-
-  if(selectedCoin){
-    let ctx = document.getElementById("chart_"+selectedCoin).getContext("2d");
-    let candles = data.coins[selectedCoin].candles;
-
-    candles.forEach((v,i)=>{
-      let x = i * 12;
-      let open = 300 - v.open/10;
-      let close = 300 - v.close/10;
-      let high = 300 - v.high/10;
-      let low = 300 - v.low/10;
-
-      ctx.strokeStyle = "white";
-      ctx.beginPath();
-      ctx.moveTo(x,high);
-      ctx.lineTo(x,low);
-      ctx.stroke();
-
-      ctx.fillStyle = v.close > v.open ? "lime" : "red";
-      ctx.fillRect(x-3, Math.min(open,close),6,Math.abs(open-close)+1);
-    });
-  }
 
   let logHTML = "<h3>Trades</h3>";
   data.tradeLog.slice(0,10).forEach(t=>{
@@ -321,4 +285,4 @@ load();
 `);
 });
 
-app.listen(3000,()=>console.log("🚀 RUNNING"));
+app.listen(3000,()=>console.log("🚀 SCALPING BOT RUNNING"));
