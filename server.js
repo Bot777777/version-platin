@@ -17,7 +17,7 @@ let user = {
 
 let botRunning = false;
 
-// 🔥 MEHR COINS
+// MULTI COINS
 let symbols = [
   "BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT",
   "ADAUSDT","DOGEUSDT","AVAXUSDT","LINKUSDT"
@@ -31,7 +31,7 @@ symbols.forEach(s=>{
 let tradeLog=[];
 
 
-// MARKET
+// MARKET SIMULATION
 setInterval(()=>{
   for(let s in coins){
     let c=coins[s];
@@ -56,7 +56,7 @@ setInterval(()=>{
 },1200);
 
 
-// 🧠 PRO AI (mit Volatility Filter)
+// SMART AI
 function aiDecision(h){
   if(h.length<40) return "skip";
 
@@ -69,10 +69,8 @@ function aiDecision(h){
 
   let volatility=Math.abs(h[h.length-1]-h[h.length-5])/h[h.length-5];
 
-  // ❌ keine Bewegung → kein Trade
   if(volatility < 0.002) return "skip";
 
-  // ✅ nur starke Setups
   if(momentum>0.004 && trend>0.002){
     return "buy";
   }
@@ -81,7 +79,7 @@ function aiDecision(h){
 }
 
 
-// 🤖 BOT
+// BOT
 setInterval(()=>{
   if(!botRunning) return;
 
@@ -90,7 +88,6 @@ setInterval(()=>{
     let decision=aiDecision(coin.history);
     let pos=user.positions[s];
 
-    // BUY
     if(!pos && decision==="buy"){
       let invest=user.balance*0.12;
 
@@ -103,15 +100,14 @@ setInterval(()=>{
         user.positions[s]={
           entry:coin.price,
           amount,
-          target:coin.price*1.015, // +1.5%
-          stop:coin.price*0.993    // -0.7%
+          target:coin.price*1.015,
+          stop:coin.price*0.993
         };
 
         tradeLog.unshift("🚀 BUY "+s);
       }
     }
 
-    // SELL
     if(pos){
       if(coin.price>=pos.target){
         let gain=coin.price*pos.amount-pos.entry*pos.amount;
@@ -145,7 +141,6 @@ setInterval(()=>{
     }
   }
 
-  // PROFIT LOCK
   if(user.balance>10000){
     let p=user.balance-10000;
     user.balance=10000;
@@ -190,10 +185,155 @@ app.post("/sell",(req,res)=>{
 });
 
 
-// UI bleibt wie deine aktuelle Version (kein Risiko kaputt zu machen)
-
+// UI
 app.get("/",(req,res)=>{
-  res.send("USE YOUR CURRENT UI (STABLE)");
+res.send(`
+<html>
+<body style="background:#0b0f14;color:white;font-family:Arial">
+
+<div style="max-width:1100px;margin:auto;text-align:center">
+
+<h1>🚀 PRO TERMINAL</h1>
+
+<div style="display:flex;justify-content:center;gap:20px;margin:20px">
+
+<div style="background:#1a1f26;padding:20px;border-radius:10px">
+<h2>Balance</h2>
+<p>$<span id="balance"></span></p>
+</div>
+
+<div style="background:#1a1f26;padding:20px;border-radius:10px">
+<h2>Profit</h2>
+<p>$<span id="profit"></span></p>
+</div>
+
+</div>
+
+<div>
+<span id="statusDot"></span>
+<span id="statusText"></span>
+</div>
+
+<div style="margin:10px">
+<button onclick="login()">Login</button>
+<button onclick="start()">Start</button>
+<button onclick="stop()">Stop</button>
+</div>
+
+<div style="margin:15px">
+🌍 🇪🇺 <span id="eu"></span> |
+🇺🇸 <span id="us"></span> |
+🇨🇳 <span id="cn"></span>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:15px" id="coins"></div>
+
+<div style="margin-top:30px" id="log"></div>
+
+</div>
+
+<script>
+let selectedCoin=null;
+
+function selectCoin(c){
+  selectedCoin = selectedCoin===c ? null : c;
+}
+
+function updateClock(){
+  let n=new Date();
+  eu.innerText=n.toLocaleTimeString("de-DE",{timeZone:"Europe/Berlin"});
+  us.innerText=n.toLocaleTimeString("en-US",{timeZone:"America/New_York"});
+  cn.innerText=n.toLocaleTimeString("zh-CN",{timeZone:"Asia/Shanghai"});
+}
+
+function drawChart(canvas,candles){
+  let ctx=canvas.getContext("2d");
+  ctx.clearRect(0,0,400,200);
+
+  candles.forEach((v,i)=>{
+    let x=i*6;
+    let open=200-v.open/10;
+    let close=200-v.close/10;
+    let high=200-v.high/10;
+    let low=200-v.low/10;
+
+    ctx.strokeStyle="white";
+    ctx.beginPath();
+    ctx.moveTo(x,high);
+    ctx.lineTo(x,low);
+    ctx.stroke();
+
+    ctx.fillStyle=v.close>v.open?"lime":"red";
+    ctx.fillRect(x-2,Math.min(open,close),4,Math.abs(open-close)+1);
+  });
+}
+
+async function load(){
+  let res=await fetch("/data");
+  let d=await res.json();
+
+  balance.innerText=d.user.balance.toFixed(2);
+  profit.innerText=d.user.profitBank.toFixed(2);
+
+  statusDot.innerHTML=d.botRunning
+    ?"<span style='width:12px;height:12px;background:lime;border-radius:50%;display:inline-block'></span>"
+    :"<span style='width:12px;height:12px;background:red;border-radius:50%;display:inline-block'></span>";
+
+  statusText.innerText=d.botRunning?"BOT ACTIVE":"BOT STOPPED";
+
+  let html="";
+
+  for(let c in d.coins){
+    let coin=d.coins[c];
+
+    html+=\`
+    <div style="background:#1a1f26;padding:15px;border-radius:10px">
+      <div onclick="selectCoin('\${c}')">
+        <h3>\${c}</h3>
+        <p>$\${coin.price.toFixed(2)}</p>
+        <p>Owned: \${d.user.portfolio[c]||0}</p>
+      </div>
+
+      \${!d.botRunning ? '<button onclick="sell(\\''+c+'\\')">SELL</button>' : ''}
+
+      \${selectedCoin===c?'<canvas id="chart_'+c+'" width="400" height="200"></canvas>':''}
+    </div>\`;
+  }
+
+  coins.innerHTML=html;
+
+  if(selectedCoin){
+    let canvas=document.getElementById("chart_"+selectedCoin);
+    if(canvas){
+      drawChart(canvas,d.coins[selectedCoin].candles);
+    }
+  }
+
+  let logHTML="<h3>Trades</h3>";
+  d.tradeLog.slice(0,10).forEach(t=>{
+    logHTML+="<p>"+t+"</p>";
+  });
+
+  log.innerHTML=logHTML;
+}
+
+async function sell(s){
+  await fetch("/sell",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({symbol:s})});
+  load();
+}
+
+async function login(){await fetch("/login",{method:"POST"});load();}
+async function start(){await fetch("/bot/start",{method:"POST"});load();}
+async function stop(){await fetch("/bot/stop",{method:"POST"});load();}
+
+setInterval(load,1500);
+setInterval(updateClock,1000);
+load();
+</script>
+
+</body>
+</html>
+`);
 });
 
-app.listen(3000,()=>console.log("🚀 PRO BOT RUNNING"));
+app.listen(3000,()=>console.log("🚀 FULL SYSTEM RUNNING"));
