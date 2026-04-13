@@ -1,6 +1,5 @@
 const express = require("express");
 const cors = require("cors");
-const path = require("path");
 
 const app = express();
 app.use(cors());
@@ -11,6 +10,7 @@ let user = {
   balance: 10000,
   profitBank: 0,
   portfolio: {},
+  positions: {},
   loggedIn: false
 };
 
@@ -23,36 +23,38 @@ symbols.forEach(s=>{
   coins[s] = {
     price: 100 + Math.random()*1000,
     history: [],
-    candles: [],
-    buys: [],
-    last: 100
+    candles: []
   };
 });
 
 let tradeLog = [];
 
-// MARKET ENGINE (Candles)
+// MARKET ENGINE (verbessert)
 setInterval(()=>{
   for(let s in coins){
     let c = coins[s];
 
+    let trend = Math.sin(Date.now()/5000); // smoother Markt
+    let noise = (Math.random()-0.5)*0.01;
+
     let open = c.price;
-    let change = (Math.random()-0.5)*0.02;
+    let change = trend*0.005 + noise;
     let close = open * (1+change);
+
     let high = Math.max(open, close)*(1+Math.random()*0.01);
     let low = Math.min(open, close)*(1-Math.random()*0.01);
 
     c.price = close;
 
     c.candles.push({open,close,high,low});
-    if(c.candles.length > 50) c.candles.shift();
+    if(c.candles.length > 60) c.candles.shift();
 
     c.history.push(close);
-    if(c.history.length > 50) c.history.shift();
+    if(c.history.length > 60) c.history.shift();
   }
 },2000);
 
-// AGGRESSIVE AI
+// AI STRATEGIE
 function aiDecision(h){
   if(h.length < 20) return "hold";
 
@@ -67,7 +69,7 @@ function aiDecision(h){
   return "hold";
 }
 
-// BOT
+// BOT ENGINE
 setInterval(()=>{
   if(!botRunning) return;
 
@@ -75,24 +77,48 @@ setInterval(()=>{
     let coin = coins[s];
     let decision = aiDecision(coin.history);
 
-    // AGGRESSIVE BUY (mehr kaufen bei Trend)
-    if(decision==="buy" && user.balance > coin.price){
-      let amount = Math.floor(user.balance / coin.price * 0.3); // 30% rein
-      if(amount < 1) amount = 1;
+    let pos = user.positions[s];
 
-      user.balance -= coin.price * amount;
-      user.portfolio[s] = (user.portfolio[s]||0) + amount;
+    // BUY
+    if(!pos && decision==="buy"){
+      let invest = user.balance * 0.25;
+      if(invest > coin.price){
 
-      tradeLog.unshift("🔥 BUY "+amount+" "+s);
+        let amount = invest / coin.price;
+
+        user.balance -= invest;
+        user.portfolio[s] = (user.portfolio[s]||0) + amount;
+
+        user.positions[s] = {
+          entry: coin.price,
+          amount: amount,
+          stop: coin.price * 0.97,
+          target: coin.price * 1.05
+        };
+
+        tradeLog.unshift("🟢 BUY "+s);
+      }
     }
 
-    // FAST SELL
-    if(decision==="sell" && user.portfolio[s]>0){
-      user.balance += coin.price * user.portfolio[s];
+    // MANAGE POSITION
+    if(pos){
+      // TAKE PROFIT
+      if(coin.price >= pos.target){
+        user.balance += coin.price * pos.amount;
+        delete user.positions[s];
+        user.portfolio[s] = 0;
 
-      tradeLog.unshift("💥 SELL "+user.portfolio[s]+" "+s);
+        tradeLog.unshift("💰 TAKE PROFIT "+s);
+      }
 
-      user.portfolio[s] = 0;
+      // STOP LOSS
+      else if(coin.price <= pos.stop){
+        user.balance += coin.price * pos.amount;
+        delete user.positions[s];
+        user.portfolio[s] = 0;
+
+        tradeLog.unshift("🛑 STOP LOSS "+s);
+      }
     }
   }
 
@@ -102,7 +128,7 @@ setInterval(()=>{
     user.balance = 10000;
     user.profitBank += profit;
 
-    tradeLog.unshift("💰 PROFIT "+profit.toFixed(2));
+    tradeLog.unshift("💎 PROFIT "+profit.toFixed(2));
   }
 
 },3000);
@@ -139,6 +165,7 @@ app.post("/sell",(req,res)=>{
   if(user.portfolio[symbol] > 0){
     user.balance += coins[symbol].price * user.portfolio[symbol];
     user.portfolio[symbol] = 0;
+    delete user.positions[symbol];
 
     tradeLog.unshift("MANUAL SELL "+symbol);
   }
@@ -150,14 +177,19 @@ app.post("/sell",(req,res)=>{
 app.get("/",(req,res)=>{
 res.send(`
 <html>
-<body style="background:#0b0f14;color:white;font-family:Arial;max-width:1200px;margin:auto">
+<body style="background:#0b0f14;color:white;font-family:Arial">
 
-<h2>🚀 PRO TERMINAL V4</h2>
+<div style="max-width:1200px;margin:auto">
+
+<h2>🚀 PRO TERMINAL LEVEL 2</h2>
 
 <div>
 Balance: $<span id="balance"></span> |
+Portfolio: $<span id="portfolio"></span> |
 Profit: $<span id="profit"></span>
 </div>
+
+<div id="status"></div>
 
 <div style="margin-top:10px">
 <button onclick="login()">Login</button>
@@ -171,16 +203,16 @@ Profit: $<span id="profit"></span>
 🇨🇳 <span id="cn"></span>
 </div>
 
-<canvas id="chart" width="800" height="300"></canvas>
-
 <div id="coins"></div>
 <div id="log"></div>
+
+</div>
 
 <script>
 let selectedCoin = null;
 
 function selectCoin(c){
-  selectedCoin = c;
+  selectedCoin = selectedCoin === c ? null : c;
 }
 
 function updateClock(){
@@ -190,31 +222,6 @@ function updateClock(){
   cn.innerText = now.toLocaleTimeString("zh-CN",{timeZone:"Asia/Shanghai"});
 }
 
-function drawChart(candles){
-  let c = document.getElementById("chart");
-  let ctx = c.getContext("2d");
-
-  ctx.clearRect(0,0,c.width,c.height);
-
-  candles.forEach((v,i)=>{
-    let x = i * 10;
-
-    let openY = 300 - v.open/10;
-    let closeY = 300 - v.close/10;
-    let highY = 300 - v.high/10;
-    let lowY = 300 - v.low/10;
-
-    ctx.strokeStyle = "white";
-    ctx.beginPath();
-    ctx.moveTo(x, highY);
-    ctx.lineTo(x, lowY);
-    ctx.stroke();
-
-    ctx.fillStyle = v.close > v.open ? "lime" : "red";
-    ctx.fillRect(x-2, Math.min(openY,closeY), 4, Math.abs(openY-closeY)+1);
-  });
-}
-
 async function load(){
   const res = await fetch("/data");
   const data = await res.json();
@@ -222,17 +229,32 @@ async function load(){
   balance.innerText = data.user.balance.toFixed(2);
   profit.innerText = data.user.profitBank.toFixed(2);
 
+  let portfolioValue = 0;
+  for(let c in data.user.portfolio){
+    portfolioValue += (data.user.portfolio[c]||0) * data.coins[c].price;
+  }
+  portfolio.innerText = portfolioValue.toFixed(2);
+
+  status.innerHTML = data.botRunning
+    ? "🟢 BOT ACTIVE"
+    : "🔴 BOT STOPPED";
+
   let html = "";
 
   for(let c in data.coins){
     let coin = data.coins[c];
 
     html += \`
-    <div onclick="selectCoin('\${c}')" style="background:#1a1f26;padding:15px;margin:10px;border-radius:12px">
-      <h3>\${c}</h3>
-      <p>$\${coin.price.toFixed(2)}</p>
-      <p>Owned: \${data.user.portfolio[c]||0}</p>
-      <button onclick="event.stopPropagation();sell('\${c}')">SELL</button>
+    <div style="background:#1a1f26;padding:15px;margin:15px;border-radius:12px">
+      <div onclick="selectCoin('\${c}')" style="cursor:pointer">
+        <h2>\${c}</h2>
+        <p>Price: $\${coin.price.toFixed(2)}</p>
+        <p>Owned: \${data.user.portfolio[c]||0}</p>
+      </div>
+
+      <button onclick="sell('\${c}')">SELL</button>
+
+      \${selectedCoin===c ? '<canvas id="chart_'+c+'" width="800" height="300"></canvas>' : ''}
     </div>
     \`;
   }
@@ -240,7 +262,25 @@ async function load(){
   coins.innerHTML = html;
 
   if(selectedCoin){
-    drawChart(data.coins[selectedCoin].candles);
+    let ctx = document.getElementById("chart_"+selectedCoin).getContext("2d");
+    let candles = data.coins[selectedCoin].candles;
+
+    candles.forEach((v,i)=>{
+      let x = i * 12;
+      let open = 300 - v.open/10;
+      let close = 300 - v.close/10;
+      let high = 300 - v.high/10;
+      let low = 300 - v.low/10;
+
+      ctx.strokeStyle = "white";
+      ctx.beginPath();
+      ctx.moveTo(x,high);
+      ctx.lineTo(x,low);
+      ctx.stroke();
+
+      ctx.fillStyle = v.close > v.open ? "lime" : "red";
+      ctx.fillRect(x-3, Math.min(open,close),6,Math.abs(open-close)+1);
+    });
   }
 
   let logHTML = "<h3>Trades</h3>";
@@ -255,17 +295,9 @@ async function sell(s){
   await fetch("/sell",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({symbol:s})});
 }
 
-async function login(){
-  await fetch("/login",{method:"POST"});
-}
-
-async function start(){
-  await fetch("/bot/start",{method:"POST"});
-}
-
-async function stop(){
-  await fetch("/bot/stop",{method:"POST"});
-}
+async function login(){ await fetch("/login",{method:"POST"}); }
+async function start(){ await fetch("/bot/start",{method:"POST"}); }
+async function stop(){ await fetch("/bot/stop",{method:"POST"}); }
 
 setInterval(load,2000);
 setInterval(updateClock,1000);
@@ -278,4 +310,4 @@ load();
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT,()=>console.log("🚀 V4 RUNNING"));
+app.listen(PORT,()=>console.log("🚀 LEVEL 2 RUNNING"));
