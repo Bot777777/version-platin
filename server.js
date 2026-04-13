@@ -5,9 +5,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔐 LOGIN / MODE
-let mode = "demo"; // demo | binance
-
 // USER
 let user = {
   balance: 10000,
@@ -24,13 +21,13 @@ let symbols = ["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT"];
 
 let coins = {};
 symbols.forEach(s=>{
-  coins[s]={price:100+Math.random()*1000,history:[],candles:[]};
+  coins[s] = { price:100+Math.random()*1000, history:[], candles:[] };
 });
 
 let tradeLog=[];
 
 
-// 📈 MARKET
+// MARKET
 setInterval(()=>{
   for(let s in coins){
     let c=coins[s];
@@ -55,25 +52,21 @@ setInterval(()=>{
 },1500);
 
 
-// 🧠 EDGE BOT
+// AI
 function aiDecision(h){
-  if(h.length<30)return"hold";
+  if(h.length<30) return "hold";
 
   let short=h.slice(-5).reduce((a,b)=>a+b)/5;
-  let mid=h.slice(-15).reduce((a,b)=>a+b)/15;
   let long=h.slice(-30).reduce((a,b)=>a+b)/30;
 
-  let momentum=(short-mid)/mid;
-  let trend=(mid-long)/long;
+  let diff=(short-long)/long;
 
-  // nur starke Trends
-  if(momentum>0.004 && trend>0.002)return"buy";
-
-  return"hold";
+  if(diff>0.003) return "buy";
+  return "hold";
 }
 
 
-// 🤖 BOT
+// BOT
 setInterval(()=>{
   if(!botRunning) return;
 
@@ -82,7 +75,7 @@ setInterval(()=>{
     let decision=aiDecision(coin.history);
     let pos=user.positions[s];
 
-    // BUY (weniger Trades!)
+    // BUY
     if(!pos && decision==="buy"){
       let invest=user.balance*0.2;
 
@@ -95,11 +88,11 @@ setInterval(()=>{
         user.positions[s]={
           entry:coin.price,
           amount,
-          target:coin.price*1.01,  // +1%
-          stop:coin.price*0.995    // -0.5%
+          target:coin.price*1.01,
+          stop:coin.price*0.995
         };
 
-        tradeLog.unshift("🚀 BUY "+s);
+        tradeLog.unshift("BUY "+s);
       }
     }
 
@@ -116,7 +109,7 @@ setInterval(()=>{
         delete user.positions[s];
         user.portfolio[s]=0;
 
-        tradeLog.unshift("💰 "+gain.toFixed(2));
+        tradeLog.unshift("PROFIT "+gain.toFixed(2));
         continue;
       }
 
@@ -131,12 +124,13 @@ setInterval(()=>{
         delete user.positions[s];
         user.portfolio[s]=0;
 
-        tradeLog.unshift("🛑 "+loss.toFixed(2));
+        tradeLog.unshift("LOSS "+loss.toFixed(2));
         continue;
       }
     }
   }
 
+  // PROFIT LOCK
   if(user.balance>10000){
     let p=user.balance-10000;
     user.balance=10000;
@@ -148,16 +142,11 @@ setInterval(()=>{
 
 // API
 app.get("/data",(req,res)=>{
-  res.json({user,coins,botRunning,tradeLog,mode});
+  res.json({user,coins,botRunning,tradeLog});
 });
 
 app.post("/login",(req,res)=>{
   user.loggedIn=true;
-  res.json({ok:true});
-});
-
-app.post("/mode",(req,res)=>{
-  mode=req.body.mode;
   res.json({ok:true});
 });
 
@@ -171,6 +160,18 @@ app.post("/bot/stop",(req,res)=>{
   res.json({ok:true});
 });
 
+app.post("/sell",(req,res)=>{
+  const {symbol}=req.body;
+
+  if(user.portfolio[symbol]>0){
+    user.balance+=coins[symbol].price*user.portfolio[symbol];
+    user.portfolio[symbol]=0;
+    delete user.positions[symbol];
+  }
+
+  res.json({ok:true});
+});
+
 
 // UI
 app.get("/",(req,res)=>{
@@ -180,7 +181,7 @@ res.send(`
 
 <div style="max-width:1200px;margin:auto">
 
-<h2>🚀 PRO TERMINAL FINAL</h2>
+<h2>🚀 PRO TERMINAL</h2>
 
 <div>
 Balance: $<span id="balance"></span> |
@@ -192,15 +193,9 @@ Profit: $<span id="profit"></span>
 </div>
 
 <div>
-Mode: <span id="mode"></span>
-<button onclick="setMode('demo')">Demo</button>
-<button onclick="setMode('binance')">Binance</button>
-</div>
-
-<div>
-Trades:<span id="trades"></span> |
-Wins:<span id="wins"></span> |
-Losses:<span id="losses"></span>
+Trades: <span id="trades"></span> |
+Wins: <span id="wins"></span> |
+Losses: <span id="losses"></span>
 </div>
 
 <button onclick="login()">Login</button>
@@ -216,7 +211,30 @@ Losses:<span id="losses"></span>
 let selectedCoin=null;
 
 function selectCoin(c){
-  selectedCoin=selectedCoin===c?null:c;
+  selectedCoin = selectedCoin===c ? null : c;
+}
+
+function drawChart(canvas,candles){
+  let ctx=canvas.getContext("2d");
+  ctx.clearRect(0,0,800,300);
+
+  candles.forEach((v,i)=>{
+    let x=i*10;
+
+    let open=300-v.open/10;
+    let close=300-v.close/10;
+    let high=300-v.high/10;
+    let low=300-v.low/10;
+
+    ctx.strokeStyle="white";
+    ctx.beginPath();
+    ctx.moveTo(x,high);
+    ctx.lineTo(x,low);
+    ctx.stroke();
+
+    ctx.fillStyle=v.close>v.open?"lime":"red";
+    ctx.fillRect(x-3,Math.min(open,close),6,Math.abs(open-close)+1);
+  });
 }
 
 async function load(){
@@ -226,11 +244,9 @@ async function load(){
   balance.innerText=d.user.balance.toFixed(2);
   profit.innerText=d.user.profitBank.toFixed(2);
 
-  mode.innerText=d.mode;
-
   statusDot.innerHTML=d.botRunning
-  ?"<span style='width:12px;height:12px;background:lime;border-radius:50%;display:inline-block'></span>"
-  :"<span style='width:12px;height:12px;background:red;border-radius:50%;display:inline-block'></span>";
+    ?"<span style='width:12px;height:12px;background:lime;border-radius:50%;display:inline-block'></span>"
+    :"<span style='width:12px;height:12px;background:red;border-radius:50%;display:inline-block'></span>";
 
   statusText.innerText=d.botRunning?"BOT ACTIVE":"BOT STOPPED";
 
@@ -249,10 +265,39 @@ async function load(){
         <h3>\${c}</h3>
         <p>$\${coin.price.toFixed(2)}</p>
       </div>
+
+      \${selectedCoin===c ? '<canvas id="chart_'+c+'" width="800" height="300"></canvas>' : ''}
     </div>\`;
   }
 
   coins.innerHTML=html;
 
+  if(selectedCoin){
+    let canvas=document.getElementById("chart_"+selectedCoin);
+    if(canvas){
+      drawChart(canvas,d.coins[selectedCoin].candles);
+    }
+  }
+
   let logHTML="<h3>Trades</h3>";
-  d.trade
+  d.tradeLog.slice(0,10).forEach(t=>{
+    logHTML+="<p>"+t+"</p>";
+  });
+
+  log.innerHTML=logHTML;
+}
+
+async function login(){await fetch("/login",{method:"POST"});load();}
+async function start(){await fetch("/bot/start",{method:"POST"});load();}
+async function stop(){await fetch("/bot/stop",{method:"POST"});load();}
+
+setInterval(load,1500);
+load();
+</script>
+
+</body>
+</html>
+`);
+});
+
+app.listen(3000,()=>console.log("RUNNING"));
