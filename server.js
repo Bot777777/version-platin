@@ -1,78 +1,64 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-
+app.use(express.static(path.join(__dirname, "frontend")));
 
 // USER
 let user = {
   balance: 10000,
   profitBank: 0,
   portfolio: {},
-  entry: {}
+  loggedIn: false
 };
 
-
-// BOT
+// BOT STATUS
 let botRunning = false;
 
-
 // COINS
-let symbols = ["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT"];
+let symbols = ["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","ADAUSDT","DOGEUSDT","BNBUSDT"];
 
 let coins = {};
-
 symbols.forEach(s=>{
   coins[s] = {
     price: 100 + Math.random()*1000,
     history: [],
-    candles: []
+    buys: [],
+    last: 100
   };
 });
 
-
-// LOG
+// TRADE LOG
 let tradeLog = [];
 
-
-// PRICE + CANDLES
+// PRICE UPDATE
 setInterval(()=>{
   for(let s in coins){
-    let coin = coins[s];
+    let change = (Math.random()-0.5)*0.01;
+    coins[s].last = coins[s].price;
+    coins[s].price *= (1+change);
 
-    let open = coin.price;
-    let change = (Math.random()-0.5)*0.02;
-    let close = open * (1+change);
-
-    let high = Math.max(open, close) * (1 + Math.random()*0.01);
-    let low = Math.min(open, close) * (1 - Math.random()*0.01);
-
-    coin.price = close;
-
-    coin.history.push(close);
-    if(coin.history.length>50) coin.history.shift();
-
-    coin.candles.push({open,high,low,close});
-    if(coin.candles.length>30) coin.candles.shift();
+    coins[s].history.push(coins[s].price);
+    if(coins[s].history.length > 60) coins[s].history.shift();
   }
 },2000);
 
-
 // AI
 function aiDecision(h){
-  if(h.length<20) return "hold";
+  if(h.length < 25) return "hold";
 
   let short = h.slice(-5).reduce((a,b)=>a+b)/5;
-  let long = h.slice(-20).reduce((a,b)=>a+b)/20;
+  let mid = h.slice(-10).reduce((a,b)=>a+b)/10;
+  let long = h.slice(-25).reduce((a,b)=>a+b)/25;
 
-  if(short > long*1.002) return "buy";
-  if(short < long*0.998) return "sell";
+  if(short > mid && mid > long) return "buy";
+  if(short < mid && mid < long) return "sell";
 
   return "hold";
 }
-
 
 // BOT
 setInterval(()=>{
@@ -85,50 +71,64 @@ setInterval(()=>{
     if(decision==="buy" && user.balance > coin.price){
       user.balance -= coin.price;
       user.portfolio[s] = (user.portfolio[s]||0)+1;
-      user.entry[s] = coin.price;
+      coin.buys.push(coin.price);
 
-      tradeLog.unshift("BUY "+s);
+      tradeLog.unshift("BUY "+s+" @ "+coin.price.toFixed(2));
     }
 
     if(decision==="sell" && user.portfolio[s]>0){
       user.balance += coin.price;
       user.portfolio[s]--;
+      coin.buys.shift();
 
-      tradeLog.unshift("SELL "+s);
+      tradeLog.unshift("SELL "+s+" @ "+coin.price.toFixed(2));
     }
   }
 
-  // 💰 PROFIT AUTO TRANSFER
+  // 💰 PROFIT SYSTEM
   if(user.balance > 10000){
     let profit = user.balance - 10000;
     user.balance = 10000;
     user.profitBank += profit;
 
-    tradeLog.unshift("💰 PROFIT LOCKED: "+profit.toFixed(2));
+    tradeLog.unshift("💰 PROFIT "+profit.toFixed(2));
   }
 
-},2000);
-
+},3000);
 
 // API
 app.get("/data",(req,res)=>{
-  res.json({user,coins,botRunning,tradeLog});
+  res.json({
+    user,
+    coins,
+    botRunning,
+    tradeLog,
+    time: Date.now()
+  });
 });
 
+// LOGIN
+app.post("/login",(req,res)=>{
+  user.loggedIn = true;
+  res.json({ok:true});
+});
+
+// BOT START/STOP
 app.post("/bot/start",(req,res)=>{
   botRunning = true;
-  res.json({ok:true});
+  res.json({running:true});
 });
 
 app.post("/bot/stop",(req,res)=>{
   botRunning = false;
-  res.json({ok:true});
+  res.json({running:false});
 });
 
+// MANUAL SELL
 app.post("/sell",(req,res)=>{
   const {symbol} = req.body;
 
-  if(user.portfolio[symbol]>0){
+  if(user.portfolio[symbol] > 0){
     user.balance += coins[symbol].price;
     user.portfolio[symbol]--;
 
@@ -138,124 +138,119 @@ app.post("/sell",(req,res)=>{
   res.json({ok:true});
 });
 
-
 // UI
 app.get("/",(req,res)=>{
 res.send(`
 <html>
-<body style="margin:0;background:#0b0f14;color:white;font-family:Arial">
+<body style="background:#0b0f14;color:white;font-family:Arial">
 
-<div style="max-width:1200px;margin:auto;padding:20px">
+<h2>🚀 PRO TERMINAL V3</h2>
 
-<h1>🚀 PRO TERMINAL V5</h1>
-
-<div style="display:flex;justify-content:space-between">
-  <div id="balance"></div>
-  <div id="profit"></div>
+<div>
+Balance: $<span id="balance"></span> |
+Profit: $<span id="profit"></span>
 </div>
 
+<div style="margin-top:10px">
+<button onclick="login()">Login</button>
 <button onclick="start()">Start</button>
 <button onclick="stop()">Stop</button>
+</div>
 
-<div id="coins" style="
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
-gap:15px;
-margin-top:20px;
-"></div>
+<div style="margin-top:10px">
+🌍 🇪🇺 <span id="eu"></span> |
+🇺🇸 <span id="us"></span> |
+🇨🇳 <span id="cn"></span>
+</div>
 
-<div id="chart"></div>
+<canvas id="chart" width="400" height="200"></canvas>
+
+<div id="coins"></div>
+<div id="log"></div>
 
 <script>
+let selectedCoin = null;
 
-let selected = null;
+function selectCoin(c){
+  selectedCoin = c;
+}
+
+function updateClock(){
+  let now = new Date();
+  eu.innerText = now.toLocaleTimeString("de-DE",{timeZone:"Europe/Berlin"});
+  us.innerText = now.toLocaleTimeString("en-US",{timeZone:"America/New_York"});
+  cn.innerText = now.toLocaleTimeString("zh-CN",{timeZone:"Asia/Shanghai"});
+}
+
+function drawChart(history){
+  let c = document.getElementById("chart");
+  let ctx = c.getContext("2d");
+
+  ctx.clearRect(0,0,400,200);
+
+  history.forEach((p,i)=>{
+    let x = i*5;
+    let y = 200 - p/10;
+    ctx.fillStyle="lime";
+    ctx.fillRect(x,y,2,2);
+  });
+}
 
 async function load(){
   const res = await fetch("/data");
   const data = await res.json();
 
-  document.getElementById("balance").innerText =
-    "Trading: $" + data.user.balance.toFixed(2);
-
-  document.getElementById("profit").innerText =
-    "Profit: $" + data.user.profitBank.toFixed(2);
+  balance.innerText = data.user.balance.toFixed(2);
+  profit.innerText = data.user.profitBank.toFixed(2);
 
   let html = "";
 
   for(let c in data.coins){
     let coin = data.coins[c];
-    let amount = data.user.portfolio[c]||0;
 
     html += \`
-    <div onclick="selectCoin('\${c}')" style="
-      background:#1a1f26;
-      padding:15px;
-      border-radius:10px;
-      cursor:pointer;
-    ">
-      <h2>\${c}</h2>
-      <p>$ \${coin.price.toFixed(2)}</p>
-      <p>Owned: \${amount}</p>
-      <button onclick="sell('\${c}');event.stopPropagation()">SELL</button>
+    <div onclick="selectCoin('\${c}')" style="background:#222;padding:10px;margin:10px;border-radius:10px;cursor:pointer">
+      <h3>\${c}</h3>
+      <p>Price: $\${coin.price.toFixed(2)}</p>
+      <p>Owned: \${data.user.portfolio[c]||0}</p>
+      <button onclick="event.stopPropagation();sell('\${c}')">SELL</button>
     </div>
     \`;
   }
 
-  document.getElementById("coins").innerHTML = html;
+  coins.innerHTML = html;
 
-  if(selected){
-    drawChart(data.coins[selected].candles);
-  }
-}
-
-
-function selectCoin(c){
-  selected = c;
-}
-
-
-function drawChart(candles){
-  let canvas = document.getElementById("chartCanvas");
-  if(!canvas){
-    document.getElementById("chart").innerHTML =
-      '<canvas id="chartCanvas" width="600" height="300"></canvas>';
-    canvas = document.getElementById("chartCanvas");
+  if(selectedCoin){
+    drawChart(data.coins[selectedCoin].history);
   }
 
-  let ctx = canvas.getContext("2d");
-  ctx.clearRect(0,0,600,300);
-
-  candles.forEach((c,i)=>{
-    let x = i*20;
-
-    let color = c.close > c.open ? "lime" : "red";
-
-    ctx.strokeStyle = color;
-    ctx.beginPath();
-    ctx.moveTo(x,300-c.high/5);
-    ctx.lineTo(x,300-c.low/5);
-    ctx.stroke();
-
-    ctx.fillStyle = color;
-    ctx.fillRect(x-5,300-Math.max(c.open,c.close)/5,10,10);
+  let logHTML = "<h3>Trades</h3>";
+  data.tradeLog.slice(0,10).forEach(t=>{
+    logHTML += "<p>"+t+"</p>";
   });
-}
 
+  log.innerHTML = logHTML;
+}
 
 async function sell(s){
-  await fetch("/sell",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({symbol:s})
-  });
+  await fetch("/sell",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({symbol:s})});
 }
 
-async function start(){ await fetch("/bot/start",{method:"POST"}); }
-async function stop(){ await fetch("/bot/stop",{method:"POST"}); }
+async function login(){
+  await fetch("/login",{method:"POST"});
+}
+
+async function start(){
+  await fetch("/bot/start",{method:"POST"});
+}
+
+async function stop(){
+  await fetch("/bot/stop",{method:"POST"});
+}
 
 setInterval(load,2000);
+setInterval(updateClock,1000);
 load();
-
 </script>
 
 </body>
@@ -263,7 +258,5 @@ load();
 `);
 });
 
-
-// START
 const PORT = process.env.PORT || 3000;
-app.listen(PORT,()=>console.log("🚀 V5 läuft"));
+app.listen(PORT,()=>console.log("🚀 SERVER RUNNING"));
