@@ -5,7 +5,6 @@ const path = require("path");
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "frontend")));
 
 // USER
 let user = {
@@ -15,47 +14,55 @@ let user = {
   loggedIn: false
 };
 
-// BOT STATUS
 let botRunning = false;
 
-// COINS
-let symbols = ["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","ADAUSDT","DOGEUSDT","BNBUSDT"];
+let symbols = ["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","ADAUSDT"];
 
 let coins = {};
 symbols.forEach(s=>{
   coins[s] = {
     price: 100 + Math.random()*1000,
     history: [],
+    candles: [],
     buys: [],
     last: 100
   };
 });
 
-// TRADE LOG
 let tradeLog = [];
 
-// PRICE UPDATE
+// MARKET ENGINE (Candles)
 setInterval(()=>{
   for(let s in coins){
-    let change = (Math.random()-0.5)*0.01;
-    coins[s].last = coins[s].price;
-    coins[s].price *= (1+change);
+    let c = coins[s];
 
-    coins[s].history.push(coins[s].price);
-    if(coins[s].history.length > 60) coins[s].history.shift();
+    let open = c.price;
+    let change = (Math.random()-0.5)*0.02;
+    let close = open * (1+change);
+    let high = Math.max(open, close)*(1+Math.random()*0.01);
+    let low = Math.min(open, close)*(1-Math.random()*0.01);
+
+    c.price = close;
+
+    c.candles.push({open,close,high,low});
+    if(c.candles.length > 50) c.candles.shift();
+
+    c.history.push(close);
+    if(c.history.length > 50) c.history.shift();
   }
 },2000);
 
-// AI
+// AGGRESSIVE AI
 function aiDecision(h){
-  if(h.length < 25) return "hold";
+  if(h.length < 20) return "hold";
 
   let short = h.slice(-5).reduce((a,b)=>a+b)/5;
-  let mid = h.slice(-10).reduce((a,b)=>a+b)/10;
-  let long = h.slice(-25).reduce((a,b)=>a+b)/25;
+  let long = h.slice(-20).reduce((a,b)=>a+b)/20;
 
-  if(short > mid && mid > long) return "buy";
-  if(short < mid && mid < long) return "sell";
+  let momentum = (short - long)/long;
+
+  if(momentum > 0.01) return "buy";
+  if(momentum < -0.01) return "sell";
 
   return "hold";
 }
@@ -68,24 +75,28 @@ setInterval(()=>{
     let coin = coins[s];
     let decision = aiDecision(coin.history);
 
+    // AGGRESSIVE BUY (mehr kaufen bei Trend)
     if(decision==="buy" && user.balance > coin.price){
-      user.balance -= coin.price;
-      user.portfolio[s] = (user.portfolio[s]||0)+1;
-      coin.buys.push(coin.price);
+      let amount = Math.floor(user.balance / coin.price * 0.3); // 30% rein
+      if(amount < 1) amount = 1;
 
-      tradeLog.unshift("BUY "+s+" @ "+coin.price.toFixed(2));
+      user.balance -= coin.price * amount;
+      user.portfolio[s] = (user.portfolio[s]||0) + amount;
+
+      tradeLog.unshift("🔥 BUY "+amount+" "+s);
     }
 
+    // FAST SELL
     if(decision==="sell" && user.portfolio[s]>0){
-      user.balance += coin.price;
-      user.portfolio[s]--;
-      coin.buys.shift();
+      user.balance += coin.price * user.portfolio[s];
 
-      tradeLog.unshift("SELL "+s+" @ "+coin.price.toFixed(2));
+      tradeLog.unshift("💥 SELL "+user.portfolio[s]+" "+s);
+
+      user.portfolio[s] = 0;
     }
   }
 
-  // 💰 PROFIT SYSTEM
+  // PROFIT LOCK
   if(user.balance > 10000){
     let profit = user.balance - 10000;
     user.balance = 10000;
@@ -102,18 +113,16 @@ app.get("/data",(req,res)=>{
     user,
     coins,
     botRunning,
-    tradeLog,
-    time: Date.now()
+    tradeLog
   });
 });
 
-// LOGIN
+// ROUTES
 app.post("/login",(req,res)=>{
   user.loggedIn = true;
   res.json({ok:true});
 });
 
-// BOT START/STOP
 app.post("/bot/start",(req,res)=>{
   botRunning = true;
   res.json({running:true});
@@ -124,13 +133,12 @@ app.post("/bot/stop",(req,res)=>{
   res.json({running:false});
 });
 
-// MANUAL SELL
 app.post("/sell",(req,res)=>{
   const {symbol} = req.body;
 
   if(user.portfolio[symbol] > 0){
-    user.balance += coins[symbol].price;
-    user.portfolio[symbol]--;
+    user.balance += coins[symbol].price * user.portfolio[symbol];
+    user.portfolio[symbol] = 0;
 
     tradeLog.unshift("MANUAL SELL "+symbol);
   }
@@ -142,9 +150,9 @@ app.post("/sell",(req,res)=>{
 app.get("/",(req,res)=>{
 res.send(`
 <html>
-<body style="background:#0b0f14;color:white;font-family:Arial">
+<body style="background:#0b0f14;color:white;font-family:Arial;max-width:1200px;margin:auto">
 
-<h2>🚀 PRO TERMINAL V3</h2>
+<h2>🚀 PRO TERMINAL V4</h2>
 
 <div>
 Balance: $<span id="balance"></span> |
@@ -163,7 +171,7 @@ Profit: $<span id="profit"></span>
 🇨🇳 <span id="cn"></span>
 </div>
 
-<canvas id="chart" width="400" height="200"></canvas>
+<canvas id="chart" width="800" height="300"></canvas>
 
 <div id="coins"></div>
 <div id="log"></div>
@@ -182,17 +190,28 @@ function updateClock(){
   cn.innerText = now.toLocaleTimeString("zh-CN",{timeZone:"Asia/Shanghai"});
 }
 
-function drawChart(history){
+function drawChart(candles){
   let c = document.getElementById("chart");
   let ctx = c.getContext("2d");
 
-  ctx.clearRect(0,0,400,200);
+  ctx.clearRect(0,0,c.width,c.height);
 
-  history.forEach((p,i)=>{
-    let x = i*5;
-    let y = 200 - p/10;
-    ctx.fillStyle="lime";
-    ctx.fillRect(x,y,2,2);
+  candles.forEach((v,i)=>{
+    let x = i * 10;
+
+    let openY = 300 - v.open/10;
+    let closeY = 300 - v.close/10;
+    let highY = 300 - v.high/10;
+    let lowY = 300 - v.low/10;
+
+    ctx.strokeStyle = "white";
+    ctx.beginPath();
+    ctx.moveTo(x, highY);
+    ctx.lineTo(x, lowY);
+    ctx.stroke();
+
+    ctx.fillStyle = v.close > v.open ? "lime" : "red";
+    ctx.fillRect(x-2, Math.min(openY,closeY), 4, Math.abs(openY-closeY)+1);
   });
 }
 
@@ -209,9 +228,9 @@ async function load(){
     let coin = data.coins[c];
 
     html += \`
-    <div onclick="selectCoin('\${c}')" style="background:#222;padding:10px;margin:10px;border-radius:10px;cursor:pointer">
+    <div onclick="selectCoin('\${c}')" style="background:#1a1f26;padding:15px;margin:10px;border-radius:12px">
       <h3>\${c}</h3>
-      <p>Price: $\${coin.price.toFixed(2)}</p>
+      <p>$\${coin.price.toFixed(2)}</p>
       <p>Owned: \${data.user.portfolio[c]||0}</p>
       <button onclick="event.stopPropagation();sell('\${c}')">SELL</button>
     </div>
@@ -221,7 +240,7 @@ async function load(){
   coins.innerHTML = html;
 
   if(selectedCoin){
-    drawChart(data.coins[selectedCoin].history);
+    drawChart(data.coins[selectedCoin].candles);
   }
 
   let logHTML = "<h3>Trades</h3>";
@@ -259,4 +278,4 @@ load();
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT,()=>console.log("🚀 SERVER RUNNING"));
+app.listen(PORT,()=>console.log("🚀 V4 RUNNING"));
