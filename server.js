@@ -2,7 +2,6 @@ const express = require("express");
 const cors = require("cors");
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
@@ -10,9 +9,9 @@ app.use(express.json());
 // USER
 let user = {
   balance: 10000,
+  profitBank: 0,
   portfolio: {},
-  entry: {},
-  loggedIn: false
+  entry: {}
 };
 
 
@@ -21,13 +20,15 @@ let botRunning = false;
 
 
 // COINS
-let symbols = ["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","ADAUSDT","DOGEUSDT","BNBUSDT"];
+let symbols = ["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT"];
 
 let coins = {};
+
 symbols.forEach(s=>{
   coins[s] = {
     price: 100 + Math.random()*1000,
-    history: []
+    history: [],
+    candles: []
   };
 });
 
@@ -36,14 +37,25 @@ symbols.forEach(s=>{
 let tradeLog = [];
 
 
-// PRICE SIM
+// PRICE + CANDLES
 setInterval(()=>{
   for(let s in coins){
-    let change = (Math.random()-0.5)*0.02;
-    coins[s].price *= (1+change);
+    let coin = coins[s];
 
-    coins[s].history.push(coins[s].price);
-    if(coins[s].history.length>60) coins[s].history.shift();
+    let open = coin.price;
+    let change = (Math.random()-0.5)*0.02;
+    let close = open * (1+change);
+
+    let high = Math.max(open, close) * (1 + Math.random()*0.01);
+    let low = Math.min(open, close) * (1 - Math.random()*0.01);
+
+    coin.price = close;
+
+    coin.history.push(close);
+    if(coin.history.length>50) coin.history.shift();
+
+    coin.candles.push({open,high,low,close});
+    if(coin.candles.length>30) coin.candles.shift();
   }
 },2000);
 
@@ -62,7 +74,7 @@ function aiDecision(h){
 }
 
 
-// BOT ENGINE
+// BOT
 setInterval(()=>{
   if(!botRunning) return;
 
@@ -86,17 +98,21 @@ setInterval(()=>{
     }
   }
 
+  // 💰 PROFIT AUTO TRANSFER
+  if(user.balance > 10000){
+    let profit = user.balance - 10000;
+    user.balance = 10000;
+    user.profitBank += profit;
+
+    tradeLog.unshift("💰 PROFIT LOCKED: "+profit.toFixed(2));
+  }
+
 },2000);
 
 
 // API
 app.get("/data",(req,res)=>{
   res.json({user,coins,botRunning,tradeLog});
-});
-
-app.post("/login",(req,res)=>{
-  user.loggedIn = true;
-  res.json({ok:true});
 });
 
 app.post("/bot/start",(req,res)=>{
@@ -125,98 +141,106 @@ app.post("/sell",(req,res)=>{
 
 // UI
 app.get("/",(req,res)=>{
-  res.send(`
+res.send(`
 <html>
 <body style="margin:0;background:#0b0f14;color:white;font-family:Arial">
 
 <div style="max-width:1200px;margin:auto;padding:20px">
 
-<h1>🚀 PRO TERMINAL V4</h1>
+<h1>🚀 PRO TERMINAL V5</h1>
 
-<div style="display:flex;justify-content:space-between;margin-bottom:20px">
+<div style="display:flex;justify-content:space-between">
   <div id="balance"></div>
-  <div>
-    <button onclick="login()">Login</button>
-    <button onclick="start()">Start</button>
-    <button onclick="stop()">Stop</button>
-  </div>
+  <div id="profit"></div>
 </div>
 
-<div style="margin-bottom:20px">
-  <span id="status"></span> |
-  🇪🇺 <span id="eu"></span> |
-  🇺🇸 <span id="us"></span> |
-  🇨🇳 <span id="cn"></span>
-</div>
+<button onclick="start()">Start</button>
+<button onclick="stop()">Stop</button>
 
 <div id="coins" style="
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
-  gap:15px;
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+gap:15px;
+margin-top:20px;
 "></div>
 
-<div id="log" style="margin-top:30px"></div>
-
-</div>
+<div id="chart"></div>
 
 <script>
 
-function updateClock(){
-  let now = new Date();
-  eu.innerText = now.toLocaleTimeString("de-DE",{timeZone:"Europe/Berlin"});
-  us.innerText = now.toLocaleTimeString("en-US",{timeZone:"America/New_York"});
-  cn.innerText = now.toLocaleTimeString("zh-CN",{timeZone:"Asia/Shanghai"});
-}
+let selected = null;
 
 async function load(){
   const res = await fetch("/data");
   const data = await res.json();
 
-  let portfolioValue = 0;
+  document.getElementById("balance").innerText =
+    "Trading: $" + data.user.balance.toFixed(2);
+
+  document.getElementById("profit").innerText =
+    "Profit: $" + data.user.profitBank.toFixed(2);
+
   let html = "";
 
   for(let c in data.coins){
     let coin = data.coins[c];
     let amount = data.user.portfolio[c]||0;
-    let entry = data.user.entry[c]||coin.price;
-
-    let pnl = (coin.price - entry)*amount;
-    portfolioValue += amount*coin.price;
 
     html += \`
-      <div style="
-        background:#1a1f26;
-        padding:15px;
-        border-radius:10px;
-        box-shadow:0 0 10px #000;
-      ">
-        <h2>\${c}</h2>
-        <p>💲 \${coin.price.toFixed(2)}</p>
-        <p>📦 \${amount}</p>
-        <p style="color:\${pnl>=0?'lime':'red'}">
-          PnL: \${pnl.toFixed(2)}
-        </p>
-        <button onclick="sell('\${c}')">SELL</button>
-      </div>
+    <div onclick="selectCoin('\${c}')" style="
+      background:#1a1f26;
+      padding:15px;
+      border-radius:10px;
+      cursor:pointer;
+    ">
+      <h2>\${c}</h2>
+      <p>$ \${coin.price.toFixed(2)}</p>
+      <p>Owned: \${amount}</p>
+      <button onclick="sell('\${c}');event.stopPropagation()">SELL</button>
+    </div>
     \`;
   }
 
   document.getElementById("coins").innerHTML = html;
 
-  document.getElementById("balance").innerText =
-    "Balance: $" + data.user.balance.toFixed(2) +
-    " | Portfolio: $" + portfolioValue.toFixed(2);
-
-  document.getElementById("status").innerText =
-    data.botRunning ? "🟢 BOT ACTIVE" : "🔴 BOT STOPPED";
-
-  let logHTML = "<h3>Trades</h3>";
-  data.tradeLog.slice(0,10).forEach(t=>{
-    logHTML += "<p>"+t+"</p>";
-  });
-
-  document.getElementById("log").innerHTML = logHTML;
+  if(selected){
+    drawChart(data.coins[selected].candles);
+  }
 }
+
+
+function selectCoin(c){
+  selected = c;
+}
+
+
+function drawChart(candles){
+  let canvas = document.getElementById("chartCanvas");
+  if(!canvas){
+    document.getElementById("chart").innerHTML =
+      '<canvas id="chartCanvas" width="600" height="300"></canvas>';
+    canvas = document.getElementById("chartCanvas");
+  }
+
+  let ctx = canvas.getContext("2d");
+  ctx.clearRect(0,0,600,300);
+
+  candles.forEach((c,i)=>{
+    let x = i*20;
+
+    let color = c.close > c.open ? "lime" : "red";
+
+    ctx.strokeStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x,300-c.high/5);
+    ctx.lineTo(x,300-c.low/5);
+    ctx.stroke();
+
+    ctx.fillStyle = color;
+    ctx.fillRect(x-5,300-Math.max(c.open,c.close)/5,10,10);
+  });
+}
+
 
 async function sell(s){
   await fetch("/sell",{
@@ -226,13 +250,10 @@ async function sell(s){
   });
 }
 
-async function login(){ await fetch("/login",{method:"POST"}); }
 async function start(){ await fetch("/bot/start",{method:"POST"}); }
 async function stop(){ await fetch("/bot/stop",{method:"POST"}); }
 
 setInterval(load,2000);
-setInterval(updateClock,1000);
-
 load();
 
 </script>
@@ -245,4 +266,4 @@ load();
 
 // START
 const PORT = process.env.PORT || 3000;
-app.listen(PORT,()=>console.log("🚀 V4 läuft"));
+app.listen(PORT,()=>console.log("🚀 V5 läuft"));
