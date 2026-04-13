@@ -3,10 +3,10 @@ const cors = require("cors");
 const path = require("path");
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json();
 app.use(express.static(path.join(__dirname, "frontend")));
 // 👤 USER
-let user = {
+let user = {},
   balance: 10000,
   portfolio: {},
   loggedIn: false
@@ -19,19 +19,19 @@ let botRunning = false;
 let symbols = ["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","ADAUSDT","DOGEUSDT","BNBUSDT"];
 
 let coins = {};
-setInterval(() => {
+setInterval() => {
   for (let c in coins) {
     if (!coins[c].price || coins[c].price === 0) {
       coins[c].price = 100 + Math.random()*1000;
     }
   }
-}, 1000);
-symbols.forEach(s=>{
+}, 1000;
+symbols.forEach(s)=>{
 coins[s] = {
   price: 100 + Math.random()*1000,
   history: [],
   buys: [],
-  last: 100,});
+  last: 100,};
 
 // 📜 TRADE LOG
 let tradeLog = [];
@@ -60,7 +60,7 @@ fetchPrices();      }
   }
 }
 // Fallback Markt (läuft IMMER)
-setInterval(() => {
+setInterval() => {
   for (let s in coins) {
     let change = (Math.random() - 0.5) * 0.005;
 
@@ -94,7 +94,7 @@ function aiDecision(h){
 }
 
 // 🤖 BOT
-setInterval(()=>{
+setInterval()=>{
   if(!botRunning) return;
 
   for(let s of symbols){
