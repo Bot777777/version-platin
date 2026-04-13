@@ -33,7 +33,7 @@ setInterval(()=>{
     let c=coins[s];
 
     let trend=Math.sin(Date.now()/4000);
-    let noise=(Math.random()-0.5)*0.003;
+    let noise=(Math.random()-0.5)*0.002;
 
     let open=c.price;
     let close=open*(1+trend*0.003+noise);
@@ -52,27 +52,24 @@ setInterval(()=>{
 },1500);
 
 
-// 🧠 SMART EDGE AI
+// 🧠 PRO TRADER AI
 function aiDecision(h){
   if(h.length<40) return "hold";
 
-  let short=h.slice(-5).reduce((a,b)=>a+b)/5;
-  let mid=h.slice(-20).reduce((a,b)=>a+b)/20;
-  let long=h.slice(-40).reduce((a,b)=>a+b)/40;
+  let s=h.slice(-5).reduce((a,b)=>a+b)/5;
+  let m=h.slice(-20).reduce((a,b)=>a+b)/20;
+  let l=h.slice(-40).reduce((a,b)=>a+b)/40;
 
-  let momentum=(short-mid)/mid;
-  let trend=(mid-long)/long;
+  let momentum=(s-m)/m;
+  let trend=(m-l)/l;
 
-  // nur starke Trends traden
-  if(momentum>0.004 && trend>0.002){
-    return "buy";
-  }
+  if(momentum>0.004 && trend>0.002) return "buy";
 
   return "hold";
 }
 
 
-// 🤖 BOT (PROFIT OPTIMIERT)
+// 🤖 BOT
 setInterval(()=>{
   if(!botRunning) return;
 
@@ -81,7 +78,6 @@ setInterval(()=>{
     let decision=aiDecision(coin.history);
     let pos=user.positions[s];
 
-    // BUY
     if(!pos && decision==="buy"){
       let invest=user.balance*0.15;
 
@@ -94,17 +90,17 @@ setInterval(()=>{
         user.positions[s]={
           entry:coin.price,
           amount,
-          target:coin.price*1.015, // +1.5%
-          stop:coin.price*0.993    // -0.7%
+          target:coin.price*1.015,
+          stop:coin.price*0.993
         };
 
-        tradeLog.unshift("🚀 SMART BUY "+s);
+        tradeLog.unshift("🚀 BUY "+s);
       }
     }
 
-    // SELL
     if(pos){
-      // TAKE PROFIT
+      let change=(coin.price-pos.entry)/pos.entry;
+
       if(coin.price>=pos.target){
         let gain=coin.price*pos.amount-pos.entry*pos.amount;
 
@@ -116,11 +112,10 @@ setInterval(()=>{
         delete user.positions[s];
         user.portfolio[s]=0;
 
-        tradeLog.unshift("💰 PROFIT "+gain.toFixed(2));
+        tradeLog.unshift("💰 "+gain.toFixed(2));
         continue;
       }
 
-      // STOP LOSS
       if(coin.price<=pos.stop){
         let loss=coin.price*pos.amount-pos.entry*pos.amount;
 
@@ -132,13 +127,17 @@ setInterval(()=>{
         delete user.positions[s];
         user.portfolio[s]=0;
 
-        tradeLog.unshift("🛑 LOSS "+loss.toFixed(2));
+        tradeLog.unshift("🛑 "+loss.toFixed(2));
         continue;
+      }
+
+      // Trailing Stop
+      if(change>0.01){
+        pos.stop=coin.price*0.997;
       }
     }
   }
 
-  // 💎 PROFIT LOCK
   if(user.balance>10000){
     let p=user.balance-10000;
     user.balance=10000;
@@ -168,18 +167,6 @@ app.post("/bot/stop",(req,res)=>{
   res.json({ok:true});
 });
 
-app.post("/sell",(req,res)=>{
-  const {symbol}=req.body;
-
-  if(user.portfolio[symbol]>0){
-    user.balance+=coins[symbol].price*user.portfolio[symbol];
-    user.portfolio[symbol]=0;
-    delete user.positions[symbol];
-  }
-
-  res.json({ok:true});
-});
-
 
 // UI
 app.get("/",(req,res)=>{
@@ -187,30 +174,43 @@ res.send(`
 <html>
 <body style="background:#0b0f14;color:white;font-family:Arial">
 
-<div style="max-width:1200px;margin:auto">
+<div style="max-width:1100px;margin:auto;text-align:center">
 
-<h2>🚀 PRO TERMINAL (PROFIT MODE)</h2>
+<h1>🚀 PRO TERMINAL</h1>
 
-<div>
-Balance: $<span id="balance"></span> |
-Profit: $<span id="profit"></span>
+<div style="display:flex;justify-content:center;gap:20px;margin:20px">
+
+<div style="background:#1a1f26;padding:20px;border-radius:10px">
+<h2>Balance</h2>
+<p>$<span id="balance"></span></p>
+</div>
+
+<div style="background:#1a1f26;padding:20px;border-radius:10px">
+<h2>Profit</h2>
+<p>$<span id="profit"></span></p>
+</div>
+
 </div>
 
 <div>
-<span id="statusDot"></span> <span id="statusText"></span>
+<span id="statusDot"></span>
+<span id="statusText"></span>
 </div>
 
-<div>
-Trades: <span id="trades"></span> |
-Wins: <span id="wins"></span> |
-Losses: <span id="losses"></span>
-</div>
-
+<div style="margin:10px">
 <button onclick="login()">Login</button>
 <button onclick="start()">Start</button>
 <button onclick="stop()">Stop</button>
+</div>
 
-<div id="coins"></div>
+<div style="margin:15px">
+🌍 🇪🇺 <span id="eu"></span> |
+🇺🇸 <span id="us"></span> |
+🇨🇳 <span id="cn"></span>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:15px" id="coins"></div>
+
 <div id="log"></div>
 
 </div>
@@ -222,13 +222,19 @@ function selectCoin(c){
   selectedCoin=selectedCoin===c?null:c;
 }
 
+function updateClock(){
+  let n=new Date();
+  eu.innerText=n.toLocaleTimeString("de-DE",{timeZone:"Europe/Berlin"});
+  us.innerText=n.toLocaleTimeString("en-US",{timeZone:"America/New_York"});
+  cn.innerText=n.toLocaleTimeString("zh-CN",{timeZone:"Asia/Shanghai"});
+}
+
 function drawChart(canvas,candles){
   let ctx=canvas.getContext("2d");
   ctx.clearRect(0,0,800,300);
 
   candles.forEach((v,i)=>{
     let x=i*10;
-
     let open=300-v.open/10;
     let close=300-v.close/10;
     let high=300-v.high/10;
@@ -253,14 +259,10 @@ async function load(){
   profit.innerText=d.user.profitBank.toFixed(2);
 
   statusDot.innerHTML=d.botRunning
-    ?"<span style='width:12px;height:12px;background:lime;border-radius:50%;display:inline-block'></span>"
-    :"<span style='width:12px;height:12px;background:red;border-radius:50%;display:inline-block'></span>";
+  ?"<span style='width:12px;height:12px;background:lime;border-radius:50%;display:inline-block'></span>"
+  :"<span style='width:12px;height:12px;background:red;border-radius:50%;display:inline-block'></span>";
 
   statusText.innerText=d.botRunning?"BOT ACTIVE":"BOT STOPPED";
-
-  trades.innerText=d.user.stats.trades;
-  wins.innerText=d.user.stats.wins;
-  losses.innerText=d.user.stats.losses;
 
   let html="";
 
@@ -268,13 +270,13 @@ async function load(){
     let coin=d.coins[c];
 
     html+=\`
-    <div style="background:#222;margin:10px;padding:10px;border-radius:10px">
+    <div style="background:#1a1f26;padding:15px;border-radius:10px">
       <div onclick="selectCoin('\${c}')">
         <h3>\${c}</h3>
         <p>$\${coin.price.toFixed(2)}</p>
       </div>
 
-      \${selectedCoin===c ? '<canvas id="chart_'+c+'" width="800" height="300"></canvas>' : ''}
+      \${selectedCoin===c?'<canvas id="chart_'+c+'" width="400" height="200"></canvas>':''}
     </div>\`;
   }
 
@@ -286,13 +288,6 @@ async function load(){
       drawChart(canvas,d.coins[selectedCoin].candles);
     }
   }
-
-  let logHTML="<h3>Trades</h3>";
-  d.tradeLog.slice(0,10).forEach(t=>{
-    logHTML+="<p>"+t+"</p>";
-  });
-
-  log.innerHTML=logHTML;
 }
 
 async function login(){await fetch("/login",{method:"POST"});load();}
@@ -300,6 +295,7 @@ async function start(){await fetch("/bot/start",{method:"POST"});load();}
 async function stop(){await fetch("/bot/stop",{method:"POST"});load();}
 
 setInterval(load,1500);
+setInterval(updateClock,1000);
 load();
 </script>
 
@@ -308,4 +304,4 @@ load();
 `);
 });
 
-app.listen(3000,()=>console.log("🚀 PROFIT BOT RUNNING"));
+app.listen(3000,()=>console.log("🚀 PRO MODE RUNNING"));
