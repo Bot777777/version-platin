@@ -1,42 +1,46 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+
 const app = express();
+
 app.use(cors());
-app.use(express.json();
+app.use(express.json());
 app.use(express.static(path.join(__dirname, "frontend")));
+
+
 // 👤 USER
-let user = {},
+let user = {
   balance: 10000,
   portfolio: {},
   loggedIn: false
 };
 
+
 // 🤖 BOT STATUS
 let botRunning = false;
 
-// 🪙 COINS
+
+// 💰 COINS
 let symbols = ["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","ADAUSDT","DOGEUSDT","BNBUSDT"];
 
 let coins = {};
-setInterval() => {
-  for (let c in coins) {
-    if (!coins[c].price || coins[c].price === 0) {
-      coins[c].price = 100 + Math.random()*1000;
-    }
-  }
-}, 1000;
-symbols.forEach(s)=>{
-coins[s] = {
-  price: 100 + Math.random()*1000,
-  history: [],
-  buys: [],
-  last: 100,};
+
+symbols.forEach(s=>{
+  coins[s] = {
+    price: 100 + Math.random()*1000,
+    history: [],
+    buys: [],
+    last: 100
+  };
+});
+
 
 // 📜 TRADE LOG
 let tradeLog = [];
 
-// 🌍 LIVE PREISE (Binance)
+
+// 🌐 LIVE PREISE
 async function fetchPrices(){
   try{
     const res = await fetch("https://api.binance.com/api/v3/ticker/price");
@@ -50,28 +54,35 @@ async function fetchPrices(){
         coins[item.symbol].price = price;
 
         coins[item.symbol].history.push(price);
-        if(coins[item.symbol].history.length > 60)
+        if(coins[item.symbol].history.length > 60){
           coins[item.symbol].history.shift();
-        setInterval(fetchPrices, 4000);
-fetchPrices();      }
+        }
+      }
     });
+
   }catch(e){
     console.log("API Fehler");
   }
 }
-// Fallback Markt (läuft IMMER)
-setInterval() => {
-  for (let s in coins) {
-    let change = (Math.random() - 0.5) * 0.005;
+setInterval(fetchPrices, 4000);
+
+
+// fallback market (immer aktiv)
+setInterval(()=>{
+  for(let s in coins){
+    let change = (Math.random()-0.5)*0.005;
 
     coins[s].last = coins[s].price;
-    coins[s].price *= (1 + change);
+    coins[s].price *= (1+change);
 
     coins[s].history.push(coins[s].price);
-    if (coins[s].history.length > 60)
+    if(coins[s].history.length > 60){
       coins[s].history.shift();
+    }
   }
-}, 2000);
+},2000);
+
+
 // 🧠 AI
 function aiDecision(h){
   if(h.length < 25) return "hold";
@@ -93,8 +104,9 @@ function aiDecision(h){
   return "hold";
 }
 
+
 // 🤖 BOT
-setInterval()=>{
+setInterval(()=>{
   if(!botRunning) return;
 
   for(let s of symbols){
@@ -112,6 +124,7 @@ setInterval()=>{
     if(decision==="sell" && user.portfolio[s]>0){
       user.balance += coin.price;
       user.portfolio[s]--;
+
       coin.buys.shift();
 
       tradeLog.unshift("SELL "+s+" @ "+coin.price.toFixed(2));
@@ -120,8 +133,9 @@ setInterval()=>{
 
 },3000);
 
-// 🔌 API
-app.get("/data", (req,res)=>{
+
+// 📡 API
+app.get("/data",(req,res)=>{
   res.json({
     user,
     coins,
@@ -131,59 +145,27 @@ app.get("/data", (req,res)=>{
   });
 });
 
-app.get("/", (req,res)=>{
-  res.send(`
-  <body style="background:#0b0f14;color:white;font-family:Arial">
 
-  <h2>🚀 Trading App</h2>
-
-  <div id="coins"></div>
-
-  <script>
-    async function load(){
-      const res = await fetch('/data');
-      const data = await res.json();
-
-      let html = '';
-
-      for(let c in data.coins){
-        let coin = data.coins[c];
-
-        html += `
-           <div style="background:#222;padding:10px;margin:10px;border-radius:10px">
-            <h3>${c}</h3>
-            <p>$ ${coin.price}</p>
-          </div>
-        `;
-      }
-
-      document.getElementById("coins").innerHTML = html;
-    }
-
-    setInterval(load,2000);
-    load();
-  </script>
-
-  </body>
-  `);
-});
+// 🔐 LOGIN
 app.post("/login",(req,res)=>{
   user.loggedIn = true;
-  console.log("USER LOGGED IN");
   res.json({loggedIn:true});
 });
 
+
+// ▶ START BOT
 app.post("/bot/start",(req,res)=>{
   botRunning = true;
-  console.log("BOT STARTED");
   res.json({running:true});
 });
 
+
+// ⛔ STOP BOT
 app.post("/bot/stop",(req,res)=>{
   botRunning = false;
-  console.log("BOT STOPPED");
   res.json({running:false});
 });
+
 
 // 💰 MANUELL SELL
 app.post("/sell",(req,res)=>{
@@ -200,69 +182,41 @@ app.post("/sell",(req,res)=>{
   res.json({ok:true});
 });
 
-// 🌐 UI
 
-});
-app.get("/", (req,res)=>{
-res.send(`
+// 🌐 UI
+app.get("/",(req,res)=>{
+  res.send(`
 <html>
 <body style="margin:0;background:#0b0f14;color:white;font-family:Arial">
 
 <div style="padding:10px;background:#111">
-  <div style="display:flex;justify-content:space-between;align-items:center">
+  <div style="display:flex;justify-content:space-between">
     <h2>🚀 PRO TERMINAL V2.1</h2>
-    <div id="balance" style="font-size:18px"></div>
+    <div id="balance"></div>
   </div>
 
-  <div style="margin-top:10px">
-    <button onclick="login()">Login</button>
-    <button onclick="start()">Start</button>
-    <button onclick="stop()">Stop</button>
-  </div>
+  <button onclick="login()">Login</button>
+  <button onclick="start()">Start</button>
+  <button onclick="stop()">Stop</button>
 </div>
 
 <div style="padding:10px;background:#222">
-  <span id="status" style="font-weight:bold"></span> |
-  🌍 EU: <span id="eu"></span> |
-  🇺🇸 US: <span id="us"></span> |
-  🇨🇳 CN: <span id="cn"></span> |
+  <span id="status"></span> |
+  EU: <span id="eu"></span> |
+  US: <span id="us"></span> |
+  CN: <span id="cn"></span> |
   <span id="market"></span>
 </div>
 
 <canvas id="chart" width="400" height="200"></canvas>
 
-<div id="coins" style="display:flex;flex-wrap:wrap"></div>
-
-<div id="log" style="padding:10px;background:#111"></div>
+<div id="coins"></div>
+<div id="log"></div>
 
 <script>
-let last = {};
-let chartData = [];
-
-function drawChart(){
-  const c = document.getElementById("chart");
-  const ctx = c.getContext("2d");
-
-  ctx.clearRect(0,0,c.width,c.height);
-
-  chartData.forEach((v,i)=>{
-    const x = i * 6;
-    const color = v.close > v.open ? "lime" : "red";
-
-    ctx.strokeStyle = color;
-    ctx.beginPath();
-    ctx.moveTo(x,200 - v.high/1000);
-    ctx.lineTo(x,200 - v.low/1000);
-    ctx.stroke();
-
-    ctx.fillStyle = color;
-    ctx.fillRect(x-2,200 - Math.max(v.open,v.close)/1000,4,
-      Math.abs(v.open-v.close)/1000 + 1);
-  });
-}
 
 function updateClock(){
-  const now = new Date();
+  let now = new Date();
 
   eu.innerText = now.toLocaleTimeString("de-DE",{timeZone:"Europe/Berlin"});
   us.innerText = now.toLocaleTimeString("en-US",{timeZone:"America/New_York"});
@@ -270,37 +224,25 @@ function updateClock(){
 }
 
 async function load(){
-  const res = await fetch('/data');
+  const res = await fetch("/data");
   const data = await res.json();
 
-  let html = '';
+  document.getElementById("balance").innerText = "Balance: $"+data.user.balance.toFixed(2);
 
-  // 👉 DEBUG (falls coins fehlt)
-  if(!data.coins){
-    document.getElementById("coins").innerHTML = "KEINE COINS!";
-    return;
-  }
+  let html = "";
 
   for(let c in data.coins){
     let coin = data.coins[c];
 
-    html += `
-      <div style="
-        background:#222;
-        padding:15px;
-        margin:10px;
-        border-radius:10px
-      ">
-        <h3>${c}</h3>
-        <p>$ ${coin.price}</p>
+    html += \`
+      <div style="background:#222;padding:10px;margin:10px;border-radius:10px">
+        <h3>\${c}</h3>
+        <p>$ \${coin.price.toFixed(2)}</p>
       </div>
-    `;
+    \`;
   }
 
   document.getElementById("coins").innerHTML = html;
-}  coins.innerHTML = html;
-
-  market.innerText = trend > 0 ? "📈 Markt bullish" : "📉 Markt bearish";
 
   let logHTML = "<h3>Trades</h3>";
   data.tradeLog.slice(0,10).forEach(t=>{
@@ -308,42 +250,39 @@ async function load(){
   });
 
   document.getElementById("log").innerHTML = logHTML;
-}
 
-async function sell(s){
-  await fetch('/sell',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({symbol:s})
-  });
+  let trend = Math.random()-0.5;
+  document.getElementById("market").innerText =
+    trend > 0 ? "📈 Market bullish" : "📉 Market bearish";
 }
 
 async function login(){
-  await fetch('/login',{method:'POST'});
-  alert("Eingeloggt");
+  await fetch("/login",{method:"POST"});
 }
 
 async function start(){
-  await fetch('/bot/start',{method:'POST'});
-  load();
+  await fetch("/bot/start",{method:"POST"});
 }
 
 async function stop(){
-  await fetch('/bot/stop',{method:'POST'});
-  load();
+  await fetch("/bot/stop",{method:"POST"});
 }
 
 setInterval(load,3000);
 setInterval(updateClock,1000);
 load();
+
 </script>
 
 </body>
 </html>
-`);
+  `);
 });
 
+
+// 🚀 SERVER
 const PORT = process.env.PORT || 3000;
 
-app.get("/", (req,res)=>{
-  res.sendFile(path.join(__dirname, "frontend", "index.html"));.listen(PORT, ()=>console.log("🚀 V2.1 PRO läuft"));
+app.listen(PORT, ()=>{
+  console.log("🚀 Server läuft auf Port", PORT);
+});
