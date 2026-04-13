@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 
 const app = express();
 app.use(cors());
@@ -10,7 +11,6 @@ let user = {
   balance: 10000,
   profitBank: 0,
   portfolio: {},
-  positions: {},
   loggedIn: false
 };
 
@@ -23,38 +23,35 @@ symbols.forEach(s=>{
   coins[s] = {
     price: 100 + Math.random()*1000,
     history: [],
-    candles: []
+    candles: [],
+    last: 100
   };
 });
 
 let tradeLog = [];
 
-// MARKET ENGINE (verbessert)
+// MARKET
 setInterval(()=>{
   for(let s in coins){
     let c = coins[s];
 
-    let trend = Math.sin(Date.now()/5000); // smoother Markt
-    let noise = (Math.random()-0.5)*0.01;
-
     let open = c.price;
-    let change = trend*0.005 + noise;
+    let change = (Math.random()-0.5)*0.02;
     let close = open * (1+change);
-
     let high = Math.max(open, close)*(1+Math.random()*0.01);
     let low = Math.min(open, close)*(1-Math.random()*0.01);
 
     c.price = close;
 
     c.candles.push({open,close,high,low});
-    if(c.candles.length > 60) c.candles.shift();
+    if(c.candles.length > 40) c.candles.shift();
 
     c.history.push(close);
-    if(c.history.length > 60) c.history.shift();
+    if(c.history.length > 40) c.history.shift();
   }
 },2000);
 
-// AI STRATEGIE
+// AI
 function aiDecision(h){
   if(h.length < 20) return "hold";
 
@@ -69,7 +66,7 @@ function aiDecision(h){
   return "hold";
 }
 
-// BOT ENGINE
+// BOT
 setInterval(()=>{
   if(!botRunning) return;
 
@@ -77,48 +74,20 @@ setInterval(()=>{
     let coin = coins[s];
     let decision = aiDecision(coin.history);
 
-    let pos = user.positions[s];
+    if(decision==="buy" && user.balance > coin.price){
+      let amount = Math.floor(user.balance / coin.price * 0.3);
+      if(amount < 1) amount = 1;
 
-    // BUY
-    if(!pos && decision==="buy"){
-      let invest = user.balance * 0.25;
-      if(invest > coin.price){
+      user.balance -= coin.price * amount;
+      user.portfolio[s] = (user.portfolio[s]||0) + amount;
 
-        let amount = invest / coin.price;
-
-        user.balance -= invest;
-        user.portfolio[s] = (user.portfolio[s]||0) + amount;
-
-        user.positions[s] = {
-          entry: coin.price,
-          amount: amount,
-          stop: coin.price * 0.97,
-          target: coin.price * 1.05
-        };
-
-        tradeLog.unshift("🟢 BUY "+s);
-      }
+      tradeLog.unshift("🔥 BUY "+amount+" "+s);
     }
 
-    // MANAGE POSITION
-    if(pos){
-      // TAKE PROFIT
-      if(coin.price >= pos.target){
-        user.balance += coin.price * pos.amount;
-        delete user.positions[s];
-        user.portfolio[s] = 0;
-
-        tradeLog.unshift("💰 TAKE PROFIT "+s);
-      }
-
-      // STOP LOSS
-      else if(coin.price <= pos.stop){
-        user.balance += coin.price * pos.amount;
-        delete user.positions[s];
-        user.portfolio[s] = 0;
-
-        tradeLog.unshift("🛑 STOP LOSS "+s);
-      }
+    if(decision==="sell" && user.portfolio[s]>0){
+      user.balance += coin.price * user.portfolio[s];
+      tradeLog.unshift("💥 SELL "+user.portfolio[s]+" "+s);
+      user.portfolio[s] = 0;
     }
   }
 
@@ -127,8 +96,7 @@ setInterval(()=>{
     let profit = user.balance - 10000;
     user.balance = 10000;
     user.profitBank += profit;
-
-    tradeLog.unshift("💎 PROFIT "+profit.toFixed(2));
+    tradeLog.unshift("💰 PROFIT "+profit.toFixed(2));
   }
 
 },3000);
@@ -165,8 +133,6 @@ app.post("/sell",(req,res)=>{
   if(user.portfolio[symbol] > 0){
     user.balance += coins[symbol].price * user.portfolio[symbol];
     user.portfolio[symbol] = 0;
-    delete user.positions[symbol];
-
     tradeLog.unshift("MANUAL SELL "+symbol);
   }
 
@@ -181,7 +147,7 @@ res.send(`
 
 <div style="max-width:1200px;margin:auto">
 
-<h2>🚀 PRO TERMINAL LEVEL 2</h2>
+<h2>🚀 PRO TERMINAL V5</h2>
 
 <div>
 Balance: $<span id="balance"></span> |
@@ -220,6 +186,11 @@ function updateClock(){
   eu.innerText = now.toLocaleTimeString("de-DE",{timeZone:"Europe/Berlin"});
   us.innerText = now.toLocaleTimeString("en-US",{timeZone:"America/New_York"});
   cn.innerText = now.toLocaleTimeString("zh-CN",{timeZone:"Asia/Shanghai"});
+}
+
+function drawChart(candles){
+  let html = '<canvas width="600" height="250"></canvas>';
+  return html;
 }
 
 async function load(){
@@ -310,4 +281,4 @@ load();
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT,()=>console.log("🚀 LEVEL 2 RUNNING"));
+app.listen(PORT,()=>console.log("🚀 V5 RUNNING"));
