@@ -150,7 +150,7 @@ app.get("/", (req,res)=>{
         let coin = data.coins[c];
 
         html += `
-          <div style="background:#222;padding:10px;margin:10px;border-radius:10px">
+           <div style="background:#222;padding:10px;margin:10px;border-radius:10px">
             <h3>${c}</h3>
             <p>$ ${coin.price}</p>
           </div>
@@ -166,7 +166,8 @@ app.get("/", (req,res)=>{
 
   </body>
   `);
-});app.post("/login",(req,res)=>{
+});
+app.post("/login",(req,res)=>{
   user.loggedIn = true;
   console.log("USER LOGGED IN");
   res.json({loggedIn:true});
