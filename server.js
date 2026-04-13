@@ -6,7 +6,6 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "frontend")));
 
 
 // 👤 USER
@@ -17,7 +16,7 @@ let user = {
 };
 
 
-// 🤖 BOT STATUS
+// 🤖 BOT
 let botRunning = false;
 
 
@@ -36,11 +35,11 @@ symbols.forEach(s=>{
 });
 
 
-// 📜 TRADE LOG
+// 📜 LOG
 let tradeLog = [];
 
 
-// 🌐 LIVE PREISE
+// 🌐 API PRICES
 async function fetchPrices(){
   try{
     const res = await fetch("https://api.binance.com/api/v3/ticker/price");
@@ -64,13 +63,13 @@ async function fetchPrices(){
     console.log("API Fehler");
   }
 }
-setInterval(fetchPrices, 4000);
+setInterval(fetchPrices,4000);
 
 
-// fallback market (immer aktiv)
+// fallback
 setInterval(()=>{
   for(let s in coins){
-    let change = (Math.random()-0.5)*0.005;
+    let change = (Math.random()-0.5)*0.01;
 
     coins[s].last = coins[s].price;
     coins[s].price *= (1+change);
@@ -83,7 +82,7 @@ setInterval(()=>{
 },2000);
 
 
-// 🧠 AI
+// 🧠 AGGRESSIVE AI
 function aiDecision(h){
   if(h.length < 25) return "hold";
 
@@ -91,13 +90,14 @@ function aiDecision(h){
   let mid = h.slice(-10).reduce((a,b)=>a+b)/10;
   let long = h.slice(-25).reduce((a,b)=>a+b)/25;
 
-  let volatility = Math.abs(short - long);
+  let momentum = short - mid;
+  let trend = mid - long;
 
-  if(short > mid && mid > long && volatility > long*0.0015){
+  if(momentum > 0 && trend > 0){
     return "buy";
   }
 
-  if(short < mid && mid < long && volatility > long*0.0015){
+  if(momentum < 0 && trend < 0){
     return "sell";
   }
 
@@ -105,7 +105,7 @@ function aiDecision(h){
 }
 
 
-// 🤖 BOT
+// 🤖 BOT ENGINE
 setInterval(()=>{
   if(!botRunning) return;
 
@@ -131,7 +131,7 @@ setInterval(()=>{
     }
   }
 
-},3000);
+},2000);
 
 
 // 📡 API
@@ -140,8 +140,7 @@ app.get("/data",(req,res)=>{
     user,
     coins,
     botRunning,
-    tradeLog,
-    time: Date.now()
+    tradeLog
   });
 });
 
@@ -149,25 +148,25 @@ app.get("/data",(req,res)=>{
 // 🔐 LOGIN
 app.post("/login",(req,res)=>{
   user.loggedIn = true;
-  res.json({loggedIn:true});
+  res.json({ok:true});
 });
 
 
-// ▶ START BOT
+// ▶ START
 app.post("/bot/start",(req,res)=>{
   botRunning = true;
-  res.json({running:true});
+  res.json({ok:true});
 });
 
 
-// ⛔ STOP BOT
+// ⛔ STOP
 app.post("/bot/stop",(req,res)=>{
   botRunning = false;
-  res.json({running:false});
+  res.json({ok:true});
 });
 
 
-// 💰 MANUELL SELL
+// 💰 MANUAL SELL
 app.post("/sell",(req,res)=>{
   const {symbol} = req.body;
 
@@ -190,10 +189,8 @@ app.get("/",(req,res)=>{
 <body style="margin:0;background:#0b0f14;color:white;font-family:Arial">
 
 <div style="padding:10px;background:#111">
-  <div style="display:flex;justify-content:space-between">
-    <h2>🚀 PRO TERMINAL V2.1</h2>
-    <div id="balance"></div>
-  </div>
+  <h2>🚀 PRO TERMINAL V3</h2>
+  <div id="balance"></div>
 
   <button onclick="login()">Login</button>
   <button onclick="start()">Start</button>
@@ -201,14 +198,12 @@ app.get("/",(req,res)=>{
 </div>
 
 <div style="padding:10px;background:#222">
-  <span id="status"></span> |
-  EU: <span id="eu"></span> |
-  US: <span id="us"></span> |
-  CN: <span id="cn"></span> |
+  <b>Status:</b> <span id="status"></span> |
+  🇪🇺 <span id="eu"></span> |
+  🇺🇸 <span id="us"></span> |
+  🇨🇳 <span id="cn"></span> |
   <span id="market"></span>
 </div>
-
-<canvas id="chart" width="400" height="200"></canvas>
 
 <div id="coins"></div>
 <div id="log"></div>
@@ -227,22 +222,34 @@ async function load(){
   const res = await fetch("/data");
   const data = await res.json();
 
-  document.getElementById("balance").innerText = "Balance: $"+data.user.balance.toFixed(2);
+  document.getElementById("status").innerText =
+    data.botRunning ? "🟢 BOT ACTIVE" : "🔴 BOT STOPPED";
+
+  let portfolioValue = 0;
 
   let html = "";
 
   for(let c in data.coins){
     let coin = data.coins[c];
+    let amount = data.user.portfolio[c] || 0;
+
+    portfolioValue += amount * coin.price;
 
     html += \`
       <div style="background:#222;padding:10px;margin:10px;border-radius:10px">
         <h3>\${c}</h3>
-        <p>$ \${coin.price.toFixed(2)}</p>
+        <p>💲 Price: \${coin.price.toFixed(2)}</p>
+        <p>📦 Owned: \${amount}</p>
+        <button onclick="sell('\${c}')">SELL</button>
       </div>
     \`;
   }
 
   document.getElementById("coins").innerHTML = html;
+
+  document.getElementById("balance").innerText =
+    "Balance: $" + data.user.balance.toFixed(2) +
+    " | Portfolio: $" + portfolioValue.toFixed(2);
 
   let logHTML = "<h3>Trades</h3>";
   data.tradeLog.slice(0,10).forEach(t=>{
@@ -253,8 +260,18 @@ async function load(){
 
   let trend = Math.random()-0.5;
   document.getElementById("market").innerText =
-    trend > 0 ? "📈 Market bullish" : "📉 Market bearish";
+    trend > 0 ? "📈 Bullish" : "📉 Bearish";
 }
+
+
+async function sell(s){
+  await fetch("/sell",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({symbol:s})
+  });
+}
+
 
 async function login(){
   await fetch("/login",{method:"POST"});
@@ -268,8 +285,9 @@ async function stop(){
   await fetch("/bot/stop",{method:"POST"});
 }
 
-setInterval(load,3000);
+setInterval(load,2000);
 setInterval(updateClock,1000);
+
 load();
 
 </script>
@@ -280,9 +298,9 @@ load();
 });
 
 
-// 🚀 SERVER
+// 🚀 START
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, ()=>{
-  console.log("🚀 Server läuft auf Port", PORT);
+app.listen(PORT,()=>{
+  console.log("🚀 PRO BOT läuft auf Port",PORT);
 });
