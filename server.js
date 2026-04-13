@@ -32,11 +32,11 @@ setInterval(()=>{
   for(let s in coins){
     let c=coins[s];
 
-    let trend=Math.sin(Date.now()/5000);
-    let noise=(Math.random()-0.5)*0.004;
+    let trend=Math.sin(Date.now()/4000);
+    let noise=(Math.random()-0.5)*0.003;
 
     let open=c.price;
-    let close=open*(1+trend*0.002+noise);
+    let close=open*(1+trend*0.003+noise);
 
     let high=Math.max(open,close)*(1+Math.random()*0.002);
     let low=Math.min(open,close)*(1-Math.random()*0.002);
@@ -52,21 +52,27 @@ setInterval(()=>{
 },1500);
 
 
-// AI
+// 🧠 SMART EDGE AI
 function aiDecision(h){
-  if(h.length<30) return "hold";
+  if(h.length<40) return "hold";
 
   let short=h.slice(-5).reduce((a,b)=>a+b)/5;
-  let long=h.slice(-30).reduce((a,b)=>a+b)/30;
+  let mid=h.slice(-20).reduce((a,b)=>a+b)/20;
+  let long=h.slice(-40).reduce((a,b)=>a+b)/40;
 
-  let diff=(short-long)/long;
+  let momentum=(short-mid)/mid;
+  let trend=(mid-long)/long;
 
-  if(diff>0.003) return "buy";
+  // nur starke Trends traden
+  if(momentum>0.004 && trend>0.002){
+    return "buy";
+  }
+
   return "hold";
 }
 
 
-// BOT
+// 🤖 BOT (PROFIT OPTIMIERT)
 setInterval(()=>{
   if(!botRunning) return;
 
@@ -77,7 +83,7 @@ setInterval(()=>{
 
     // BUY
     if(!pos && decision==="buy"){
-      let invest=user.balance*0.2;
+      let invest=user.balance*0.15;
 
       if(invest>coin.price){
         let amount=invest/coin.price;
@@ -88,16 +94,17 @@ setInterval(()=>{
         user.positions[s]={
           entry:coin.price,
           amount,
-          target:coin.price*1.01,
-          stop:coin.price*0.995
+          target:coin.price*1.015, // +1.5%
+          stop:coin.price*0.993    // -0.7%
         };
 
-        tradeLog.unshift("BUY "+s);
+        tradeLog.unshift("🚀 SMART BUY "+s);
       }
     }
 
     // SELL
     if(pos){
+      // TAKE PROFIT
       if(coin.price>=pos.target){
         let gain=coin.price*pos.amount-pos.entry*pos.amount;
 
@@ -109,10 +116,11 @@ setInterval(()=>{
         delete user.positions[s];
         user.portfolio[s]=0;
 
-        tradeLog.unshift("PROFIT "+gain.toFixed(2));
+        tradeLog.unshift("💰 PROFIT "+gain.toFixed(2));
         continue;
       }
 
+      // STOP LOSS
       if(coin.price<=pos.stop){
         let loss=coin.price*pos.amount-pos.entry*pos.amount;
 
@@ -124,13 +132,13 @@ setInterval(()=>{
         delete user.positions[s];
         user.portfolio[s]=0;
 
-        tradeLog.unshift("LOSS "+loss.toFixed(2));
+        tradeLog.unshift("🛑 LOSS "+loss.toFixed(2));
         continue;
       }
     }
   }
 
-  // PROFIT LOCK
+  // 💎 PROFIT LOCK
   if(user.balance>10000){
     let p=user.balance-10000;
     user.balance=10000;
@@ -181,7 +189,7 @@ res.send(`
 
 <div style="max-width:1200px;margin:auto">
 
-<h2>🚀 PRO TERMINAL</h2>
+<h2>🚀 PRO TERMINAL (PROFIT MODE)</h2>
 
 <div>
 Balance: $<span id="balance"></span> |
@@ -211,7 +219,7 @@ Losses: <span id="losses"></span>
 let selectedCoin=null;
 
 function selectCoin(c){
-  selectedCoin = selectedCoin===c ? null : c;
+  selectedCoin=selectedCoin===c?null:c;
 }
 
 function drawChart(canvas,candles){
@@ -300,4 +308,4 @@ load();
 `);
 });
 
-app.listen(3000,()=>console.log("RUNNING"));
+app.listen(3000,()=>console.log("🚀 PROFIT BOT RUNNING"));
