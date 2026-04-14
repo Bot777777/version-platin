@@ -338,4 +338,8 @@ load();
 `);
 });
 
-app.listen(3000,()=>console.log("🚀 SMART AI BOT RUNNING"));
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log("🚀 SERVER RUNNING ON PORT " + PORT);
+});
