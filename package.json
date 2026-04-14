@@ -1,6 +1,7 @@
 {
   "name": "crypto-bot",
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "description": "Pro Trading Bot",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -8,6 +9,7 @@
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5",
-    "ccxt": "^4.0.0"
+    "ccxt": "^4.0.0",
+    "axios": "^1.6.0"
   }
 }
