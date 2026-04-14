@@ -202,22 +202,23 @@ res.send(`
 <div style="text-align:center;font-size:22px">
 Balance: $<span id="balance"></span> |
 Profit: $<span id="profit"></span><br>
-<span id="status"></span>
+
+<span id="status"></span><br><br>
+
+<button onclick="start()" style="font-size:18px;padding:10px;margin:5px">▶ START</button>
+<button onclick="stop()" style="font-size:18px;padding:10px;margin:5px">⏹ STOP</button>
 </div>
 
-<!-- STATS -->
 <div style="text-align:center;margin:20px;font-size:18px">
 <h2>📊 Stats</h2>
 <div id="stats"></div>
 </div>
 
-<!-- PORTFOLIO -->
 <div style="text-align:center;margin:20px;font-size:18px">
 <h2>📦 Portfolio</h2>
 <div id="portfolio"></div>
 </div>
 
-<!-- POSITIONS -->
 <div style="text-align:center;margin:20px;font-size:18px">
 <h2>📊 Aktive Trades</h2>
 <div id="positions"></div>
@@ -329,4 +330,4 @@ load();
 `);
 });
 
-app.listen(3000,()=>console.log("🚀 FINAL PRO UI BOT RUNNING"));
+app.listen(3000,()=>console.log("🚀 FINAL FIXED BOT RUNNING"));
