@@ -16,34 +16,36 @@ let user = {
 
 let botRunning = false;
 
-// ================= COINS =================
-let symbols = ["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","ADAUSDT"];
+// ================= COINS (ERWEITERT) =================
+let symbols = [
+  "BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","ADAUSDT",
+  "BNBUSDT","DOGEUSDT","AVAXUSDT","LINKUSDT","MATICUSDT"
+];
 
 let coins = {};
 symbols.forEach(s=>{
   coins[s] = {
     price: 0,
     history: [],
-    buys: []
+    entry: null
   };
 });
 
 let tradeLog = [];
 
-// ================= AXIOS BINANCE =================
+// ================= BINANCE =================
 async function fetchPrices(){
   try{
     const res = await axios.get("https://api.binance.com/api/v3/ticker/price");
-    const data = res.data;
 
-    data.forEach(item=>{
+    res.data.forEach(item=>{
       if(coins[item.symbol]){
         let price = parseFloat(item.price);
 
         coins[item.symbol].price = price;
         coins[item.symbol].history.push(price);
 
-        if(coins[item.symbol].history.length > 100){
+        if(coins[item.symbol].history.length > 120){
           coins[item.symbol].history.shift();
         }
       }
@@ -58,15 +60,27 @@ setInterval(fetchPrices,2000);
 
 // ================= AI =================
 function aiDecision(h){
-  if(h.length < 30) return "hold";
 
-  let short = h.slice(-5).reduce((a,b)=>a+b)/5;
-  let long = h.slice(-20).reduce((a,b)=>a+b)/20;
+  if(h.length < 40) return "hold";
 
-  if(short > long) return "buy";
-  if(short < long) return "sell";
+  let short = avg(h.slice(-5));
+  let mid   = avg(h.slice(-15));
+  let long  = avg(h.slice(-40));
+
+  let momentum = (short - mid) / mid;
+  let trend    = (mid - long) / long;
+
+  let breakout = h[h.length-1] > Math.max(...h.slice(-20));
+
+  if(momentum > 0.002 && trend > 0.001 && breakout){
+    return "buy";
+  }
 
   return "hold";
+}
+
+function avg(arr){
+  return arr.reduce((a,b)=>a+b)/arr.length;
 }
 
 // ================= BOT =================
@@ -75,46 +89,52 @@ setInterval(()=>{
   if(!botRunning) return;
 
   for(let s of symbols){
+
     let coin = coins[s];
     let decision = aiDecision(coin.history);
 
     // BUY
-    if(decision==="buy" && user.balance > coin.price){
+    if(decision==="buy" && !user.portfolio[s] && user.balance > coin.price){
 
       let amount = 0.05;
 
       user.balance -= coin.price * amount;
-      user.portfolio[s] = (user.portfolio[s]||0)+amount;
+      user.portfolio[s] = amount;
 
-      coin.buys.push(coin.price);
+      coin.entry = coin.price;
 
-      tradeLog.unshift("BUY "+s);
+      tradeLog.unshift("BUY "+s+" @ "+coin.price.toFixed(2));
     }
 
-    // SELL
-    if(decision==="sell" && user.portfolio[s] > 0){
+    // SELL ONLY IF PROFIT
+    if(user.portfolio[s]){
 
-      let amount = user.portfolio[s];
-      let buy = coin.buys[0] || coin.price;
+      let entry = coin.entry || coin.price;
+      let change = (coin.price - entry) / entry;
 
-      let gain = (coin.price - buy) * amount;
+      // 🔥 NUR GEWINN VERKAUF
+      if(change > 0.0025){
 
-      user.balance += coin.price * amount;
-      user.portfolio[s] = 0;
-      coin.buys.shift();
+        let amount = user.portfolio[s];
+        let gain = (coin.price - entry) * amount;
 
-      // 🔥 PROFIT LIMIT SYSTEM
-      if(user.balance > 10000){
-        let extra = user.balance - 10000;
-        user.profit += extra;
-        user.balance = 10000;
+        user.balance += coin.price * amount;
+        user.portfolio[s] = 0;
+        coin.entry = null;
+
+        // PROFIT SYSTEM
+        if(user.balance > 10000){
+          let extra = user.balance - 10000;
+          user.profit += extra;
+          user.balance = 10000;
+        }
+
+        tradeLog.unshift("PROFIT SELL "+s+" +"+gain.toFixed(2));
       }
-
-      tradeLog.unshift("SELL "+s+" "+gain.toFixed(2));
     }
   }
 
-},1500);
+},1200);
 
 // ================= API =================
 app.get("/data",(req,res)=>{
@@ -139,11 +159,12 @@ app.post("/bot/stop",(req,res)=>{
 app.post("/sell",(req,res)=>{
   const {symbol} = req.body;
 
-  if(user.portfolio[symbol] > 0){
+  if(user.portfolio[symbol]){
     let coin = coins[symbol];
 
     user.balance += coin.price * user.portfolio[symbol];
     user.portfolio[symbol] = 0;
+    coin.entry = null;
 
     tradeLog.unshift("MANUAL SELL "+symbol);
   }
@@ -176,7 +197,7 @@ res.send(`
 
 <div id="coins" style="display:flex;flex-wrap:wrap;justify-content:center"></div>
 
-<canvas id="chart" width="600" height="300" style="background:#111;margin:auto;display:block"></canvas>
+<canvas id="chart" width="800" height="350" style="display:none;margin:auto"></canvas>
 
 <div id="log" style="text-align:center"></div>
 
@@ -186,6 +207,7 @@ let selectedCoin = null;
 
 function selectCoin(c){
   selectedCoin = c;
+  document.getElementById("chart").style.display="block";
   drawChart();
 }
 
@@ -203,19 +225,21 @@ function drawChart(){
   fetch('/data').then(r=>r.json()).then(data=>{
 
     let coin = data.coins[selectedCoin];
-    if(!coin) return;
+    let h = coin.history;
+
+    if(!h.length) return;
 
     let ctx = document.getElementById("chart").getContext("2d");
-    ctx.clearRect(0,0,600,300);
+    ctx.clearRect(0,0,800,350);
 
-    let h = coin.history;
     let max = Math.max(...h);
+    let min = Math.min(...h);
 
     ctx.beginPath();
 
     for(let i=0;i<h.length;i++){
-      let x = i*5;
-      let y = 300 - (h[i]/max*250);
+      let x = i * (800 / h.length);
+      let y = 350 - ((h[i]-min)/(max-min)*300);
 
       if(i===0) ctx.moveTo(x,y);
       else ctx.lineTo(x,y);
@@ -233,8 +257,7 @@ async function load(){
   balance.innerText=d.user.balance.toFixed(2);
   profit.innerText=d.user.profit.toFixed(2);
 
-  document.getElementById("status").innerText =
-    d.botRunning ? "🟢 BOT ACTIVE" : "🔴 BOT STOPPED";
+  status.innerText = d.botRunning ? "🟢 BOT ACTIVE" : "🔴 BOT STOPPED";
 
   let html="";
 
@@ -243,7 +266,7 @@ async function load(){
 
     html+=\`
     <div onclick="selectCoin('\${c}')"
-    style="background:#222;margin:10px;padding:10px;border-radius:10px;width:200px;cursor:pointer">
+    style="background:#222;margin:10px;padding:15px;border-radius:10px;width:200px;cursor:pointer">
 
     <h3>\${c}</h3>
     <p>\${coin.price.toFixed(2)}</p>
@@ -289,4 +312,4 @@ load();
 `);
 });
 
-app.listen(3000,()=>console.log("🚀 FINAL RUNNING"));
+app.listen(3000,()=>console.log("🚀 PROFIT BOT RUNNING"));
