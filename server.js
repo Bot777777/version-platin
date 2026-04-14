@@ -11,6 +11,7 @@ let user = {
   balance: 10000,
   profit: 0,
   portfolio: {},
+  shorts: {}, // 🔥 SHORTS
   loggedIn: false
 };
 
@@ -27,7 +28,9 @@ symbols.forEach(s=>{
   coins[s] = {
     price: 0,
     history: [],
-    entry: null
+    buys: [],
+    entry: null,
+    shortEntry: null
   };
 });
 
@@ -56,12 +59,13 @@ async function fetchPrices(){
   }
 }
 
+fetchPrices(); // 🔥 FIX: sofort laden
 setInterval(fetchPrices,2000);
 
-// ================= AI =================
+// ================= AI (ERWEITERT) =================
 function aiDecision(h){
 
-  if(h.length < 40) return "hold";
+  if(h.length < 50) return "hold";
 
   let short = avg(h.slice(-5));
   let mid   = avg(h.slice(-15));
@@ -70,10 +74,15 @@ function aiDecision(h){
   let momentum = (short - mid) / mid;
   let trend    = (mid - long) / long;
 
-  let breakout = h[h.length-1] > Math.max(...h.slice(-20));
+  let breakoutUp = h[h.length-1] > Math.max(...h.slice(-20));
+  let breakoutDown = h[h.length-1] < Math.min(...h.slice(-20));
 
-  if(momentum > 0.002 && trend > 0.001 && breakout){
+  if(momentum > 0.002 && trend > 0.001 && breakoutUp){
     return "buy";
+  }
+
+  if(momentum < -0.002 && trend < -0.001 && breakoutDown){
+    return "short"; // 🔥 SHORT SIGNAL
   }
 
   return "hold";
@@ -91,9 +100,13 @@ setInterval(()=>{
   for(let s of symbols){
 
     let coin = coins[s];
+
+    // 🔥 FIX: warten bis Preis da ist
+    if(coin.price === 0) continue;
+
     let decision = aiDecision(coin.history);
 
-    // BUY
+    // ===== LONG BUY =====
     if(decision==="buy" && !user.portfolio[s] && user.balance > coin.price){
 
       let amount = 0.05;
@@ -106,13 +119,23 @@ setInterval(()=>{
       tradeLog.unshift("BUY "+s+" @ "+coin.price.toFixed(2));
     }
 
-    // SELL ONLY IF PROFIT
+    // ===== SHORT OPEN =====
+    if(decision==="short" && !user.shorts[s]){
+
+      let amount = 0.05;
+
+      user.shorts[s] = amount;
+      coin.shortEntry = coin.price;
+
+      tradeLog.unshift("SHORT "+s+" @ "+coin.price.toFixed(2));
+    }
+
+    // ===== LONG SELL (nur Gewinn) =====
     if(user.portfolio[s]){
 
       let entry = coin.entry || coin.price;
       let change = (coin.price - entry) / entry;
 
-      // 🔥 NUR GEWINN VERKAUF
       if(change > 0.0025){
 
         let amount = user.portfolio[s];
@@ -122,19 +145,44 @@ setInterval(()=>{
         user.portfolio[s] = 0;
         coin.entry = null;
 
-        // PROFIT SYSTEM
-        if(user.balance > 10000){
-          let extra = user.balance - 10000;
-          user.profit += extra;
-          user.balance = 10000;
-        }
+        applyProfit();
 
-        tradeLog.unshift("PROFIT SELL "+s+" +"+gain.toFixed(2));
+        tradeLog.unshift("LONG PROFIT "+s+" +"+gain.toFixed(2));
+      }
+    }
+
+    // ===== SHORT CLOSE (nur Gewinn) =====
+    if(user.shorts[s]){
+
+      let entry = coin.shortEntry || coin.price;
+      let change = (entry - coin.price) / entry;
+
+      if(change > 0.0025){
+
+        let amount = user.shorts[s];
+        let gain = (entry - coin.price) * amount;
+
+        user.balance += gain;
+        user.shorts[s] = 0;
+        coin.shortEntry = null;
+
+        applyProfit();
+
+        tradeLog.unshift("SHORT PROFIT "+s+" +"+gain.toFixed(2));
       }
     }
   }
 
 },1200);
+
+// ================= PROFIT =================
+function applyProfit(){
+  if(user.balance > 10000){
+    let extra = user.balance - 10000;
+    user.profit += extra;
+    user.balance = 10000;
+  }
+}
 
 // ================= API =================
 app.get("/data",(req,res)=>{
@@ -158,19 +206,30 @@ app.post("/bot/stop",(req,res)=>{
 
 app.post("/sell",(req,res)=>{
   const {symbol} = req.body;
-
-  if(user.portfolio[symbol]){
-    let coin = coins[symbol];
-
-    user.balance += coin.price * user.portfolio[symbol];
-    user.portfolio[symbol] = 0;
-    coin.entry = null;
-
-    tradeLog.unshift("MANUAL SELL "+symbol);
-  }
-
+  sellPosition(symbol,"MANUAL");
   res.json({ok:true});
 });
+
+// ================= SELL =================
+function sellPosition(symbol,reason){
+
+  let coin = coins[symbol];
+  let amount = user.portfolio[symbol];
+
+  if(!amount) return;
+
+  let entry = coin.entry || coin.price;
+  let gain = (coin.price - entry) * amount;
+
+  user.balance += coin.price * amount;
+  user.portfolio[symbol] = 0;
+
+  coin.entry = null;
+
+  applyProfit();
+
+  tradeLog.unshift(reason+" SELL "+symbol+" "+gain.toFixed(2));
+}
 
 // ================= UI =================
 app.get("/",(req,res)=>{
@@ -246,22 +305,26 @@ function drawChart(){
     }
 
     ctx.strokeStyle="lime";
+    ctx.lineWidth=2;
     ctx.stroke();
   });
 }
 
 async function load(){
+
   let res=await fetch('/data');
   let d=await res.json();
 
   balance.innerText=d.user.balance.toFixed(2);
   profit.innerText=d.user.profit.toFixed(2);
 
-  status.innerText = d.botRunning ? "🟢 BOT ACTIVE" : "🔴 BOT STOPPED";
+  document.getElementById("status").innerText =
+    d.botRunning ? "🟢 BOT ACTIVE" : "🔴 BOT STOPPED";
 
   let html="";
 
   for(let c in d.coins){
+
     let coin=d.coins[c];
 
     html+=\`
@@ -312,4 +375,4 @@ load();
 `);
 });
 
-app.listen(3000,()=>console.log("🚀 PROFIT BOT RUNNING"));
+app.listen(3000,()=>console.log("🚀 LEVEL 4 RUNNING"));
