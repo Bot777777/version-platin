@@ -11,13 +11,13 @@ let user = {
   balance: 10000,
   profit: 0,
   portfolio: {},
-  shorts: {}, // 🔥 SHORTS
+  shorts: {},
   loggedIn: false
 };
 
 let botRunning = false;
 
-// ================= COINS (ERWEITERT) =================
+// ================= COINS =================
 let symbols = [
   "BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","ADAUSDT",
   "BNBUSDT","DOGEUSDT","AVAXUSDT","LINKUSDT","MATICUSDT"
@@ -28,7 +28,6 @@ symbols.forEach(s=>{
   coins[s] = {
     price: 0,
     history: [],
-    buys: [],
     entry: null,
     shortEntry: null
   };
@@ -59,30 +58,27 @@ async function fetchPrices(){
   }
 }
 
-fetchPrices(); // 🔥 FIX: sofort laden
+fetchPrices();
 setInterval(fetchPrices,2000);
 
-// ================= AI (ERWEITERT) =================
+// ================= AI =================
 function aiDecision(h){
 
-  if(h.length < 50) return "hold";
+  if(h.length < 20) return "hold";
 
   let short = avg(h.slice(-5));
-  let mid   = avg(h.slice(-15));
-  let long  = avg(h.slice(-40));
+  let mid   = avg(h.slice(-10));
+  let long  = avg(h.slice(-20));
 
   let momentum = (short - mid) / mid;
   let trend    = (mid - long) / long;
 
-  let breakoutUp = h[h.length-1] > Math.max(...h.slice(-20));
-  let breakoutDown = h[h.length-1] < Math.min(...h.slice(-20));
-
-  if(momentum > 0.002 && trend > 0.001 && breakoutUp){
+  if(momentum > 0.001 && trend > 0.0005){
     return "buy";
   }
 
-  if(momentum < -0.002 && trend < -0.001 && breakoutDown){
-    return "short"; // 🔥 SHORT SIGNAL
+  if(momentum < -0.001 && trend < -0.0005){
+    return "short";
   }
 
   return "hold";
@@ -100,13 +96,11 @@ setInterval(()=>{
   for(let s of symbols){
 
     let coin = coins[s];
-
-    // 🔥 FIX: warten bis Preis da ist
     if(coin.price === 0) continue;
 
     let decision = aiDecision(coin.history);
 
-    // ===== LONG BUY =====
+    // LONG
     if(decision==="buy" && !user.portfolio[s] && user.balance > coin.price){
 
       let amount = 0.05;
@@ -119,29 +113,25 @@ setInterval(()=>{
       tradeLog.unshift("BUY "+s+" @ "+coin.price.toFixed(2));
     }
 
-    // ===== SHORT OPEN =====
+    // SHORT
     if(decision==="short" && !user.shorts[s]){
-
-      let amount = 0.05;
-
-      user.shorts[s] = amount;
+      user.shorts[s] = 0.05;
       coin.shortEntry = coin.price;
 
       tradeLog.unshift("SHORT "+s+" @ "+coin.price.toFixed(2));
     }
 
-    // ===== LONG SELL (nur Gewinn) =====
+    // LONG SELL (nur Gewinn)
     if(user.portfolio[s]){
 
-      let entry = coin.entry || coin.price;
+      let entry = coin.entry;
       let change = (coin.price - entry) / entry;
 
       if(change > 0.0025){
 
-        let amount = user.portfolio[s];
-        let gain = (coin.price - entry) * amount;
+        let gain = (coin.price - entry) * user.portfolio[s];
 
-        user.balance += coin.price * amount;
+        user.balance += coin.price * user.portfolio[s];
         user.portfolio[s] = 0;
         coin.entry = null;
 
@@ -151,16 +141,15 @@ setInterval(()=>{
       }
     }
 
-    // ===== SHORT CLOSE (nur Gewinn) =====
+    // SHORT CLOSE (nur Gewinn)
     if(user.shorts[s]){
 
-      let entry = coin.shortEntry || coin.price;
+      let entry = coin.shortEntry;
       let change = (entry - coin.price) / entry;
 
       if(change > 0.0025){
 
-        let amount = user.shorts[s];
-        let gain = (entry - coin.price) * amount;
+        let gain = (entry - coin.price) * user.shorts[s];
 
         user.balance += gain;
         user.shorts[s] = 0;
@@ -206,30 +195,19 @@ app.post("/bot/stop",(req,res)=>{
 
 app.post("/sell",(req,res)=>{
   const {symbol} = req.body;
-  sellPosition(symbol,"MANUAL");
+
+  if(user.portfolio[symbol]){
+    let coin = coins[symbol];
+
+    user.balance += coin.price * user.portfolio[symbol];
+    user.portfolio[symbol] = 0;
+    coin.entry = null;
+
+    tradeLog.unshift("MANUAL SELL "+symbol);
+  }
+
   res.json({ok:true});
 });
-
-// ================= SELL =================
-function sellPosition(symbol,reason){
-
-  let coin = coins[symbol];
-  let amount = user.portfolio[symbol];
-
-  if(!amount) return;
-
-  let entry = coin.entry || coin.price;
-  let gain = (coin.price - entry) * amount;
-
-  user.balance += coin.price * amount;
-  user.portfolio[symbol] = 0;
-
-  coin.entry = null;
-
-  applyProfit();
-
-  tradeLog.unshift(reason+" SELL "+symbol+" "+gain.toFixed(2));
-}
 
 // ================= UI =================
 app.get("/",(req,res)=>{
@@ -256,7 +234,7 @@ res.send(`
 
 <div id="coins" style="display:flex;flex-wrap:wrap;justify-content:center"></div>
 
-<canvas id="chart" width="800" height="350" style="display:none;margin:auto"></canvas>
+<div id="chartContainer" style="margin:auto;width:800px"></div>
 
 <div id="log" style="text-align:center"></div>
 
@@ -266,7 +244,6 @@ let selectedCoin = null;
 
 function selectCoin(c){
   selectedCoin = c;
-  document.getElementById("chart").style.display="block";
   drawChart();
 }
 
@@ -286,27 +263,44 @@ function drawChart(){
     let coin = data.coins[selectedCoin];
     let h = coin.history;
 
-    if(!h.length) return;
+    if(h.length < 5) return;
+
+    let container = document.getElementById("chartContainer");
+    container.innerHTML = "<canvas id='chart' width='800' height='350'></canvas>";
 
     let ctx = document.getElementById("chart").getContext("2d");
-    ctx.clearRect(0,0,800,350);
 
-    let max = Math.max(...h);
-    let min = Math.min(...h);
+    let candles = [];
 
-    ctx.beginPath();
+    for(let i=1;i<h.length;i+=3){
+      let open = h[i-1];
+      let close = h[i];
+      let high = Math.max(open,close,h[i+1]||close);
+      let low = Math.min(open,close,h[i+1]||close);
 
-    for(let i=0;i<h.length;i++){
-      let x = i * (800 / h.length);
-      let y = 350 - ((h[i]-min)/(max-min)*300);
-
-      if(i===0) ctx.moveTo(x,y);
-      else ctx.lineTo(x,y);
+      candles.push({open,close,high,low});
     }
 
-    ctx.strokeStyle="lime";
-    ctx.lineWidth=2;
-    ctx.stroke();
+    let max = Math.max(...candles.map(c=>c.high));
+    let min = Math.min(...candles.map(c=>c.low));
+
+    candles.forEach((c,i)=>{
+      let x = i*8+20;
+
+      let openY = 350 - ((c.open-min)/(max-min)*300);
+      let closeY = 350 - ((c.close-min)/(max-min)*300);
+      let highY = 350 - ((c.high-min)/(max-min)*300);
+      let lowY = 350 - ((c.low-min)/(max-min)*300);
+
+      ctx.strokeStyle="white";
+      ctx.beginPath();
+      ctx.moveTo(x,highY);
+      ctx.lineTo(x,lowY);
+      ctx.stroke();
+
+      ctx.fillStyle = c.close>c.open ? "lime":"red";
+      ctx.fillRect(x-2,Math.min(openY,closeY),4,Math.abs(openY-closeY)||1);
+    });
   });
 }
 
@@ -375,4 +369,4 @@ load();
 `);
 });
 
-app.listen(3000,()=>console.log("🚀 LEVEL 4 RUNNING"));
+app.listen(3000,()=>console.log("🚀 BOT RUNNING FINAL"));
