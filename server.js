@@ -1,6 +1,5 @@
 const express = require("express");
 const cors = require("cors");
-const path = require("path");
 const axios = require("axios");
 
 const app = express();
@@ -10,31 +9,28 @@ app.use(express.json());
 // ================= USER =================
 let user = {
   balance: 10000,
+  profit: 0,
   portfolio: {},
-  loggedIn: false,
-  profit: 0
+  loggedIn: false
 };
 
-// ================= BOT =================
 let botRunning = false;
 
 // ================= COINS =================
-let symbols = ["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","ADAUSDT","DOGEUSDT","BNBUSDT"];
+let symbols = ["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","ADAUSDT"];
 
 let coins = {};
 symbols.forEach(s=>{
   coins[s] = {
     price: 0,
     history: [],
-    buys: [],
-    last: 0
+    buys: []
   };
 });
 
-// ================= TRADE LOG =================
 let tradeLog = [];
 
-// ================= AXIOS PRICE FETCH =================
+// ================= AXIOS BINANCE =================
 async function fetchPrices(){
   try{
     const res = await axios.get("https://api.binance.com/api/v3/ticker/price");
@@ -44,10 +40,9 @@ async function fetchPrices(){
       if(coins[item.symbol]){
         let price = parseFloat(item.price);
 
-        coins[item.symbol].last = coins[item.symbol].price;
         coins[item.symbol].price = price;
-
         coins[item.symbol].history.push(price);
+
         if(coins[item.symbol].history.length > 100){
           coins[item.symbol].history.shift();
         }
@@ -55,46 +50,26 @@ async function fetchPrices(){
     });
 
   }catch(e){
-    console.log("API Fehler → Fallback aktiv");
+    console.log("API Fehler");
   }
 }
 
-setInterval(fetchPrices, 3000);
+setInterval(fetchPrices,2000);
 
-// ================= FALLBACK MARKET =================
-setInterval(()=>{
-  for(let s in coins){
-    let change = (Math.random() - 0.5) * 0.01;
-    coins[s].last = coins[s].price;
-    coins[s].price *= (1 + change);
-  }
-},2000);
-
-// ================= AGGRESSIVER PROFIT BOT =================
+// ================= AI =================
 function aiDecision(h){
-
   if(h.length < 30) return "hold";
 
   let short = h.slice(-5).reduce((a,b)=>a+b)/5;
-  let mid = h.slice(-15).reduce((a,b)=>a+b)/15;
-  let long = h.slice(-30).reduce((a,b)=>a+b)/30;
+  let long = h.slice(-20).reduce((a,b)=>a+b)/20;
 
-  let momentum = short - mid;
-  let trend = mid - long;
-
-  // 🔥 Scalping Edge
-  if(momentum > 0 && trend > 0){
-    return "buy";
-  }
-
-  if(momentum < 0 && trend < 0){
-    return "sell";
-  }
+  if(short > long) return "buy";
+  if(short < long) return "sell";
 
   return "hold";
 }
 
-// ================= BOT LOOP =================
+// ================= BOT =================
 setInterval(()=>{
 
   if(!botRunning) return;
@@ -104,34 +79,38 @@ setInterval(()=>{
     let decision = aiDecision(coin.history);
 
     // BUY
-    if(decision === "buy" && user.balance > coin.price){
+    if(decision==="buy" && user.balance > coin.price){
 
-      let amount = 0.1; // 🔥 kleine Trades → Scalping
+      let amount = 0.05;
 
       user.balance -= coin.price * amount;
-      user.portfolio[s] = (user.portfolio[s] || 0) + amount;
+      user.portfolio[s] = (user.portfolio[s]||0)+amount;
 
       coin.buys.push(coin.price);
 
-      tradeLog.unshift("BUY "+s+" @ "+coin.price.toFixed(2));
+      tradeLog.unshift("BUY "+s);
     }
 
     // SELL
-    if(decision === "sell" && user.portfolio[s] > 0){
+    if(decision==="sell" && user.portfolio[s] > 0){
 
       let amount = user.portfolio[s];
+      let buy = coin.buys[0] || coin.price;
 
-      let buyPrice = coin.buys[0] || coin.price;
-      let profit = (coin.price - buyPrice) * amount;
+      let gain = (coin.price - buy) * amount;
 
       user.balance += coin.price * amount;
       user.portfolio[s] = 0;
-
       coin.buys.shift();
 
-      user.profit += profit;
+      // 🔥 PROFIT LIMIT SYSTEM
+      if(user.balance > 10000){
+        let extra = user.balance - 10000;
+        user.profit += extra;
+        user.balance = 10000;
+      }
 
-      tradeLog.unshift("SELL "+s+" @ "+coin.price.toFixed(2)+" | +"+profit.toFixed(2));
+      tradeLog.unshift("SELL "+s+" "+gain.toFixed(2));
     }
   }
 
@@ -139,33 +118,24 @@ setInterval(()=>{
 
 // ================= API =================
 app.get("/data",(req,res)=>{
-  res.json({
-    user,
-    coins,
-    botRunning,
-    tradeLog,
-    time: Date.now()
-  });
+  res.json({user,coins,botRunning,tradeLog});
 });
 
-// ================= LOGIN =================
 app.post("/login",(req,res)=>{
   user.loggedIn = true;
   res.json({ok:true});
 });
 
-// ================= BOT CONTROL =================
 app.post("/bot/start",(req,res)=>{
   botRunning = true;
-  res.json({running:true});
+  res.json({ok:true});
 });
 
 app.post("/bot/stop",(req,res)=>{
   botRunning = false;
-  res.json({running:false});
+  res.json({ok:true});
 });
 
-// ================= MANUAL SELL =================
 app.post("/sell",(req,res)=>{
   const {symbol} = req.body;
 
@@ -185,97 +155,138 @@ app.post("/sell",(req,res)=>{
 app.get("/",(req,res)=>{
 res.send(`
 <html>
-<body style="margin:0;background:#0b0f14;color:white;font-family:Arial">
+<body style="background:#0b0f14;color:white;font-family:Arial">
 
-<div style="padding:20px;background:#111;text-align:center">
-<h1>🚀 PRO TERMINAL V6</h1>
+<div style="text-align:center">
 
-<div>
-Balance: $<span id="balance"></span> |
-Profit: $<span id="profit"></span>
-</div>
+<h1>🚀 PRO TERMINAL</h1>
 
-<div style="margin-top:10px">
+<p>Balance: $<span id="balance"></span></p>
+<p>Profit: $<span id="profit"></span></p>
+
+<p id="status"></p>
+
 <button onclick="login()">Login</button>
 <button onclick="start()">Start</button>
 <button onclick="stop()">Stop</button>
-</div>
 
-<div style="margin-top:10px">
-Status: <span id="status"></span>
-</div>
+<p>🌍 🇪🇺 <span id="eu"></span> | 🇺🇸 <span id="us"></span> | 🇨🇳 <span id="cn"></span></p>
 
-<div>
-🌍 <span id="eu"></span> |
-🇺🇸 <span id="us"></span> |
-🇨🇳 <span id="cn"></span>
-</div>
 </div>
 
 <div id="coins" style="display:flex;flex-wrap:wrap;justify-content:center"></div>
 
-<div id="log" style="padding:10px;background:#111;margin-top:20px"></div>
+<canvas id="chart" width="600" height="300" style="background:#111;margin:auto;display:block"></canvas>
+
+<div id="log" style="text-align:center"></div>
 
 <script>
 
+let selectedCoin = null;
+
+function selectCoin(c){
+  selectedCoin = c;
+  drawChart();
+}
+
+function updateClock(){
+  let n=new Date();
+  eu.innerText=n.toLocaleTimeString("de-DE",{timeZone:"Europe/Berlin"});
+  us.innerText=n.toLocaleTimeString("en-US",{timeZone:"America/New_York"});
+  cn.innerText=n.toLocaleTimeString("zh-CN",{timeZone:"Asia/Shanghai"});
+}
+
+function drawChart(){
+
+  if(!selectedCoin) return;
+
+  fetch('/data').then(r=>r.json()).then(data=>{
+
+    let coin = data.coins[selectedCoin];
+    if(!coin) return;
+
+    let ctx = document.getElementById("chart").getContext("2d");
+    ctx.clearRect(0,0,600,300);
+
+    let h = coin.history;
+    let max = Math.max(...h);
+
+    ctx.beginPath();
+
+    for(let i=0;i<h.length;i++){
+      let x = i*5;
+      let y = 300 - (h[i]/max*250);
+
+      if(i===0) ctx.moveTo(x,y);
+      else ctx.lineTo(x,y);
+    }
+
+    ctx.strokeStyle="lime";
+    ctx.stroke();
+  });
+}
+
 async function load(){
-  const res = await fetch('/data');
-  const data = await res.json();
+  let res=await fetch('/data');
+  let d=await res.json();
 
-  balance.innerText = data.user.balance.toFixed(2);
-  profit.innerText = data.user.profit.toFixed(2);
+  balance.innerText=d.user.balance.toFixed(2);
+  profit.innerText=d.user.profit.toFixed(2);
 
-  status.innerHTML = data.botRunning ? "🟢 BOT ACTIVE" : "🔴 BOT STOPPED";
+  document.getElementById("status").innerText =
+    d.botRunning ? "🟢 BOT ACTIVE" : "🔴 BOT STOPPED";
 
-  let html = "";
+  let html="";
 
-  for(let c in data.coins){
-    let coin = data.coins[c];
+  for(let c in d.coins){
+    let coin=d.coins[c];
 
-    html += \`
-    <div style="background:#222;padding:10px;margin:10px;border-radius:10px;width:200px">
-      <h3>\${c}</h3>
-      <p>Price: \${coin.price.toFixed(2)}</p>
-      <p>Owned: \${data.user.portfolio[c]||0}</p>
-      <button onclick="sell('\${c}')">SELL</button>
-    </div>
-    \`;
+    html+=\`
+    <div onclick="selectCoin('\${c}')"
+    style="background:#222;margin:10px;padding:10px;border-radius:10px;width:200px;cursor:pointer">
+
+    <h3>\${c}</h3>
+    <p>\${coin.price.toFixed(2)}</p>
+    <p>Owned: \${d.user.portfolio[c]||0}</p>
+
+    <button onclick="event.stopPropagation(); sell('\${c}')">SELL</button>
+
+    </div>\`;
   }
 
-  coins.innerHTML = html;
+  coins.innerHTML=html;
 
-  let logHTML = "<h3>Trades</h3>";
-  data.tradeLog.slice(0,10).forEach(t=>{
-    logHTML += "<p>"+t+"</p>";
+  drawChart();
+
+  let logHTML="";
+  d.tradeLog.slice(0,10).forEach(t=>{
+    logHTML+="<p>"+t+"</p>";
   });
 
-  log.innerHTML = logHTML;
+  log.innerHTML=logHTML;
 }
 
-// CLOCK
-function updateClock(){
-  let now = new Date();
-  eu.innerText = now.toLocaleTimeString("de-DE",{timeZone:"Europe/Berlin"});
-  us.innerText = now.toLocaleTimeString("en-US",{timeZone:"America/New_York"});
-  cn.innerText = now.toLocaleTimeString("zh-CN",{timeZone:"Asia/Shanghai"});
+async function sell(s){
+  await fetch('/sell',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({symbol:s})
+  });
 }
 
-// ACTIONS
-async function login(){ await fetch('/login',{method:'POST'}); }
-async function start(){ await fetch('/bot/start',{method:'POST'}); }
-async function stop(){ await fetch('/bot/stop',{method:'POST'}); }
-async function sell(s){ await fetch('/sell',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol:s})}); }
+async function login(){await fetch('/login',{method:'POST'});}
+async function start(){await fetch('/bot/start',{method:'POST'});}
+async function stop(){await fetch('/bot/stop',{method:'POST'});}
 
 setInterval(load,2000);
 setInterval(updateClock,1000);
 load();
 
 </script>
+
 </body>
 </html>
 `);
 });
 
-// ================= START =================
-const PORT = process.env.PORT || 3000;
-app.listen(PORT,()=>console.log("🚀 BOT RUNNING"));
+app.listen(3000,()=>console.log("🚀 FINAL RUNNING"));
