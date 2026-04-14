@@ -1,4 +1,4 @@
-const express = require("express");
+onst express = crequire("express");
 const cors = require("cors");
 const axios = require("axios");
 
@@ -12,10 +12,7 @@ let user = {
   profit: 0,
   portfolio: {},
   shorts: {},
-  stats: {
-    trades: 0,
-    wins: 0
-  },
+  stats: { trades: 0, wins: 0 },
   loggedIn: false
 };
 
@@ -47,9 +44,9 @@ async function fetchPrices(){
 
     res.data.forEach(item=>{
       if(coins[item.symbol]){
-        let price = parseFloat(item.price);
-        coins[item.symbol].price = price;
-        coins[item.symbol].history.push(price);
+        let p = parseFloat(item.price);
+        coins[item.symbol].price = p;
+        coins[item.symbol].history.push(p);
 
         if(coins[item.symbol].history.length > 80){
           coins[item.symbol].history.shift();
@@ -58,11 +55,10 @@ async function fetchPrices(){
     });
   }catch(e){}
 }
-
 fetchPrices();
 setInterval(fetchPrices,1500);
 
-// ================= REAL CANDLES =================
+// ================= CANDLES =================
 async function fetchCandles(symbol){
   try{
     const res = await axios.get(
@@ -70,27 +66,37 @@ async function fetchCandles(symbol){
     );
 
     coins[symbol].candles = res.data.map(c=>({
-      open:+c[1],high:+c[2],low:+c[3],close:+c[4]
+      open:+c[1], high:+c[2], low:+c[3], close:+c[4]
     }));
   }catch(e){}
 }
 
-// ================= AI =================
+// ================= SMART AI =================
 function aiDecision(h){
 
-  if(h.length < 10) return "hold";
+  if(h.length < 12) return "hold";
 
-  let a = h[h.length-1];
-  let b = h[h.length-3];
-  let c = h[h.length-6];
+  let last = h[h.length-1];
+  let prev = h[h.length-2];
+  let avg5 = avg(h.slice(-5));
+  let avg10 = avg(h.slice(-10));
 
-  let fast = a - b;
-  let slow = b - c;
+  let momentum = last - prev;
+  let trend = avg5 - avg10;
 
-  if(fast > 0 && slow >= 0) return "buy";
-  if(fast < 0 && slow <= 0) return "short";
+  // 🔥 smarter
+  if(momentum > 0 && trend > 0) return "buy";
+  if(momentum < 0 && trend < 0) return "short";
+
+  // leichte Reversal Chance
+  if(last < avg10 * 0.995) return "buy";
+  if(last > avg10 * 1.005) return "short";
 
   return "hold";
+}
+
+function avg(arr){
+  return arr.reduce((a,b)=>a+b)/arr.length;
 }
 
 // ================= BOT =================
@@ -103,10 +109,10 @@ setInterval(()=>{
     let coin = coins[s];
     if(coin.price === 0) continue;
 
-    let decision = aiDecision(coin.history);
+    let d = aiDecision(coin.history);
 
-    // BUY
-    if(decision==="buy" && !user.portfolio[s]){
+    // LONG
+    if(d==="buy" && !user.portfolio[s]){
       let amount = 0.05;
       user.balance -= coin.price * amount;
       user.portfolio[s] = amount;
@@ -115,7 +121,7 @@ setInterval(()=>{
     }
 
     // SHORT
-    if(decision==="short" && !user.shorts[s]){
+    if(d==="short" && !user.shorts[s]){
       user.shorts[s] = 0.05;
       coin.shortEntry = coin.price;
       tradeLog.unshift("SHORT "+s);
@@ -126,11 +132,11 @@ setInterval(()=>{
       let change = (coin.price - coin.entry)/coin.entry;
 
       if(change > 0.0015){
-        let gain = (coin.price - coin.entry) * user.portfolio[s];
+        let gain = (coin.price - coin.entry)*user.portfolio[s];
 
-        user.balance += coin.price * user.portfolio[s];
-        user.portfolio[s] = 0;
-        coin.entry = null;
+        user.balance += coin.price*user.portfolio[s];
+        user.portfolio[s]=0;
+        coin.entry=null;
 
         user.stats.trades++;
         user.stats.wins++;
@@ -145,11 +151,11 @@ setInterval(()=>{
       let change = (coin.shortEntry - coin.price)/coin.shortEntry;
 
       if(change > 0.0015){
-        let gain = (coin.shortEntry - coin.price) * user.shorts[s];
+        let gain = (coin.shortEntry - coin.price)*user.shorts[s];
 
         user.balance += gain;
-        user.shorts[s] = 0;
-        coin.shortEntry = null;
+        user.shorts[s]=0;
+        coin.shortEntry=null;
 
         user.stats.trades++;
         user.stats.wins++;
@@ -199,40 +205,52 @@ res.send(`
 
 <h1 style="text-align:center;font-size:42px">🚀 PRO TERMINAL</h1>
 
-<div style="text-align:center;font-size:22px">
-Balance: $<span id="balance"></span> |
-Profit: $<span id="profit"></span><br>
-
+<div style="text-align:center;font-size:24px">
 <span id="status"></span><br><br>
 
-<button onclick="start()" style="font-size:18px;padding:10px;margin:5px">▶ START</button>
-<button onclick="stop()" style="font-size:18px;padding:10px;margin:5px">⏹ STOP</button>
+<button onclick="start()" style="font-size:18px">START</button>
+<button onclick="stop()" style="font-size:18px">STOP</button>
+
+<br><br>
+
+Balance: $<span id="balance"></span> |
+Profit: $<span id="profit"></span>
 </div>
 
-<div style="text-align:center;margin:20px;font-size:18px">
-<h2>📊 Stats</h2>
-<div id="stats"></div>
-</div>
+<!-- COINS -->
+<div id="coins" style="display:flex;flex-wrap:wrap;justify-content:center;margin-top:20px"></div>
 
-<div style="text-align:center;margin:20px;font-size:18px">
+<!-- INFO MITTIG -->
+<div style="text-align:center;margin-top:30px">
+
 <h2>📦 Portfolio</h2>
 <div id="portfolio"></div>
-</div>
 
-<div style="text-align:center;margin:20px;font-size:18px">
-<h2>📊 Aktive Trades</h2>
+<h2>📊 Trades</h2>
 <div id="positions"></div>
+
+<h2>📜 Log</h2>
+<div id="log"></div>
+
 </div>
 
-<div id="coins" style="display:flex;flex-wrap:wrap;justify-content:center"></div>
-
-<div id="chartContainer" style="margin:auto;width:900px"></div>
-
-<div id="log" style="text-align:center;margin-top:30px"></div>
+<!-- CHART -->
+<div id="chartContainer" style="margin:auto;width:900px;margin-top:20px"></div>
 
 <script>
 
+let current=null;
+let chartVisible=false;
+
 function selectCoin(c){
+  if(current===c && chartVisible){
+    chartContainer.innerHTML="";
+    chartVisible=false;
+    return;
+  }
+
+  current=c;
+  chartVisible=true;
   loadChart(c);
 }
 
@@ -259,7 +277,6 @@ async function loadChart(symbol){
     ctx.beginPath();
     ctx.moveTo(x,high);
     ctx.lineTo(x,low);
-    ctx.strokeStyle="white";
     ctx.stroke();
 
     ctx.fillStyle=c.close>c.open?"lime":"red";
@@ -271,42 +288,33 @@ async function load(){
 
   let d=await (await fetch('/data')).json();
 
+  document.getElementById("status").innerText =
+    d.botRunning ? "🟢 BOT AKTIV" : "🔴 BOT INAKTIV";
+
   balance.innerText=d.user.balance.toFixed(2);
   profit.innerText=d.user.profit.toFixed(2);
-
-  status.innerText=d.botRunning?"🟢 ACTIVE":"🔴 STOP";
-
-  let trades=d.user.stats.trades;
-  let wins=d.user.stats.wins;
-  let winrate=trades?(wins/trades*100).toFixed(1):0;
-
-  stats.innerHTML="Trades:"+trades+" | Wins:"+wins+" | Winrate:"+winrate+"%";
 
   let pf="";
   for(let c in d.user.portfolio){
     if(d.user.portfolio[c]>0){
-      pf+=c+": "+d.user.portfolio[c]+"<br>";
+      pf+=c+" "+d.user.portfolio[c]+"<br>";
     }
   }
   portfolio.innerHTML=pf||"leer";
 
   let pos="";
   for(let c in d.coins){
-    if(d.coins[c].entry){
-      pos+=c+" LONG<br>";
-    }
-    if(d.coins[c].shortEntry){
-      pos+=c+" SHORT<br>";
-    }
+    if(d.coins[c].entry) pos+=c+" LONG<br>";
+    if(d.coins[c].shortEntry) pos+=c+" SHORT<br>";
   }
   positions.innerHTML=pos||"keine";
 
   let html="";
   for(let c in d.coins){
     html+=\`
-    <div onclick="selectCoin('\${c}')"
-    style="background:#222;margin:15px;padding:20px;width:220px;font-size:18px;cursor:pointer">
-    <b>\${c}</b><br>\${d.coins[c].price.toFixed(2)}
+    <div ondblclick="selectCoin('\${c}')"
+    style="background:#222;margin:10px;padding:20px;width:200px;cursor:pointer">
+    \${c}<br>\${d.coins[c].price.toFixed(2)}
     </div>\`;
   }
   coins.innerHTML=html;
@@ -330,4 +338,4 @@ load();
 `);
 });
 
-app.listen(3000,()=>console.log("🚀 FINAL FIXED BOT RUNNING"));
+app.listen(3000,()=>console.log("🚀 SMART AI BOT RUNNING"));
