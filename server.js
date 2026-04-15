@@ -1,4 +1,3 @@
-// ================= ENHANCED FULL BOT =================
 const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
@@ -13,7 +12,10 @@ let user = {
   profit: 0,
   portfolio: {},
   shorts: {},
-  stats: { trades: 0, wins: 0 },
+  stats: {
+    trades: 0,
+    wins: 0
+  },
   loggedIn: false
 };
 
@@ -50,11 +52,11 @@ function getEMA(prices, period){
   return ema;
 }
 
-function getTrend(h){
-  if(h.length < 50) return "SIDE";
+function getTrend(history){
+  if(history.length < 50) return "SIDE";
 
-  let ema50 = getEMA(h.slice(-50),50);
-  let ema20 = getEMA(h.slice(-20),20);
+  let ema50 = getEMA(history.slice(-50),50);
+  let ema20 = getEMA(history.slice(-20),20);
 
   if(ema20 > ema50) return "UP";
   if(ema20 < ema50) return "DOWN";
@@ -77,7 +79,9 @@ async function fetchPrices(){
         }
       }
     });
-  }catch(e){}
+  }catch(e){
+    console.log("Price error");
+  }
 }
 
 fetchPrices();
@@ -133,6 +137,7 @@ setInterval(()=>{
       user.portfolio[s] = amount;
       coin.entry = coin.price;
       coin.partialSold = false;
+      coin.trailing = null;
       tradeLog.unshift("BUY "+s);
     }
 
@@ -143,7 +148,7 @@ setInterval(()=>{
       tradeLog.unshift("SHORT "+s);
     }
 
-    // LONG
+    // LONG MANAGEMENT
     if(user.portfolio[s]){
       let change = (coin.price - coin.entry)/coin.entry;
 
@@ -152,11 +157,12 @@ setInterval(()=>{
         user.balance += coin.price * user.portfolio[s];
         user.portfolio[s] = 0;
         coin.entry = null;
+
         user.stats.trades++;
         tradeLog.unshift("STOP LOSS");
       }
 
-      // PARTIAL
+      // PARTIAL TAKE
       if(change > 0.004 && !coin.partialSold){
         let half = user.portfolio[s]/2;
         user.balance += coin.price * half;
@@ -166,13 +172,15 @@ setInterval(()=>{
 
       // TRAILING
       if(change > 0.01){
+
         if(!coin.trailing) coin.trailing = coin.price * 0.995;
 
         if(coin.price < coin.trailing){
           let gain = (coin.price - coin.entry) * user.portfolio[s];
-          user.balance += coin.price * user.portfolio[s];
 
+          user.balance += coin.price * user.portfolio[s];
           user.portfolio[s] = 0;
+
           coin.entry = null;
           coin.trailing = null;
           coin.partialSold = false;
@@ -189,14 +197,14 @@ setInterval(()=>{
       }
     }
 
-    // SHORT EXIT
+    // SHORT MANAGEMENT
     if(user.shorts[s]){
       let change = (coin.shortEntry - coin.price)/coin.shortEntry;
 
       if(change > 0.01){
         let gain = (coin.shortEntry - coin.price) * user.shorts[s];
-        user.balance += gain;
 
+        user.balance += gain;
         user.shorts[s] = 0;
         coin.shortEntry = null;
 
@@ -239,7 +247,7 @@ app.post("/bot/stop",(req,res)=>{
   res.json({ok:true});
 });
 
-// ================= UI (DEIN ORIGINAL) =================
+// ================= UI =================
 app.get("/",(req,res)=>{
 res.send(`
 <html>
@@ -253,22 +261,26 @@ Profit: $<span id="profit"></span><br>
 
 <span id="status"></span><br><br>
 
-<button onclick="start()">START</button>
-<button onclick="stop()">STOP</button>
+<button onclick="start()" style="font-size:18px;padding:10px;margin:5px">▶ START</button>
+<button onclick="stop()" style="font-size:18px;padding:10px;margin:5px">⏹ STOP</button>
 </div>
 
-<div id="coins"></div>
+<div id="coins" style="display:flex;flex-wrap:wrap;justify-content:center"></div>
 
 <script>
 async function load(){
   let d=await (await fetch('/data')).json();
+
   balance.innerText=d.user.balance.toFixed(2);
   profit.innerText=d.user.profit.toFixed(2);
-  status.innerText=d.botRunning?"ACTIVE":"STOP";
+  status.innerText=d.botRunning?"🟢 ACTIVE":"🔴 STOP";
 
   let html="";
   for(let c in d.coins){
-    html+=c+": "+d.coins[c].price+"<br>";
+    html+=\`
+    <div style="background:#222;margin:15px;padding:20px;width:220px">
+    <b>\${c}</b><br>\${d.coins[c].price.toFixed(2)}
+    </div>\`;
   }
   coins.innerHTML=html;
 }
@@ -279,10 +291,9 @@ async function stop(){await fetch('/bot/stop',{method:'POST'});}
 setInterval(load,1000);
 load();
 </script>
-
 </body>
 </html>
 `);
 });
 
-app.listen(3000,()=>console.log("✅ BOT FIXED & RUNNING"));
+app.listen(3000,()=>console.log("🚀 BOT RUNNING CLEAN + EXTENDED"));
