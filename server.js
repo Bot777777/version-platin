@@ -278,8 +278,7 @@ res.send(`
 Balance: $<span id="balance"></span> |
 Profit: $<span id="profit"></span><br>
 
-<span id="status"></span><br><br>
-
+<div id="status" style="font-size:28px;font-weight:bold;margin:15px;"></div><br>
 <button onclick="start()" style="font-size:18px;padding:10px;margin:5px">▶ START</button>
 <button onclick="stop()" style="font-size:18px;padding:10px;margin:5px">⏹ STOP</button>
 </div>
@@ -349,8 +348,13 @@ async function load(){
   balance.innerText=d.user.balance.toFixed(2);
   profit.innerText=d.user.profit.toFixed(2);
 
-  status.innerText=d.botRunning?"🟢 ACTIVE":"🔴 STOP";
-
+  if(d.botRunning){
+  status.innerHTML = "🟢 BOT AKTIV";
+  status.style.color = "lime";
+}else{
+  status.innerHTML = "🔴 BOT INAKTIV";
+  status.style.color = "red";
+}
   let trades=d.user.stats.trades;
   let wins=d.user.stats.wins;
   let winrate=trades?(wins/trades*100).toFixed(1):0;
