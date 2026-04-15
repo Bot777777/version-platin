@@ -343,8 +343,15 @@ async function loadChart(symbol){
 
 async function load(){
 
-  let d=await (await fetch('/data')).json();
+ let d;
 
+try{
+  let res = await fetch('/data');
+  d = await res.json();
+}catch(e){
+  console.log("Fetch error", e);
+  return; // stoppt sauber ohne UI zu killen
+}
   balance.innerText=d.user.balance.toFixed(2);
   profit.innerText=d.user.profit.toFixed(2);
 
