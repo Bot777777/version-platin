@@ -200,7 +200,7 @@ setInterval(()=>{
       }
 
       // ORIGINAL EXIT BLEIBT
-      if(change > 0.0015){
+      if(change > 0.003){
         let gain = (coin.price - coin.entry) * user.portfolio[s];
 
         user.balance += coin.price * user.portfolio[s];
