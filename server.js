@@ -274,16 +274,17 @@ async function load(){
   balance.innerText=d.user.balance.toFixed(2);
   profit.innerText=d.user.profit.toFixed(2);
 
-  // NEW bessere Anzeige
-  if(d.botRunning){
-    status.innerText="🟢 BOT AKTIV";
-    status.style.color="lime";
-  }else{
-    status.innerText="🔴 BOT INAKTIV";
-    status.style.color="red";
-  }
+let statusEl = document.getElementById("status");
 
-  let trades=d.user.stats.trades;
+if(statusEl){
+  if(d.botRunning){
+    statusEl.innerText="🟢 BOT AKTIV";
+    statusEl.style.color="lime";
+  }else{
+    statusEl.innerText="🔴 BOT INAKTIV";
+    statusEl.style.color="red";
+  }
+}  let trades=d.user.stats.trades;
   let wins=d.user.stats.wins;
   let winrate=trades?(wins/trades*100).toFixed(1):0;
 
