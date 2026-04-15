@@ -1,4 +1,4 @@
-// ================= ENHANCED TRADING BOT =================
+// ================= ENHANCED FULL BOT =================
 const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
@@ -40,7 +40,7 @@ symbols.forEach(s=>{
 
 let tradeLog = [];
 
-// ================= EMA =================
+// ================= EMA / TREND =================
 function getEMA(prices, period){
   let k = 2 / (period + 1);
   let ema = prices[0];
@@ -50,11 +50,11 @@ function getEMA(prices, period){
   return ema;
 }
 
-function getTrend(history){
-  if(history.length < 50) return "SIDE";
+function getTrend(h){
+  if(h.length < 50) return "SIDE";
 
-  let ema50 = getEMA(history.slice(-50),50);
-  let ema20 = getEMA(history.slice(-20),20);
+  let ema50 = getEMA(h.slice(-50),50);
+  let ema20 = getEMA(h.slice(-20),20);
 
   if(ema20 > ema50) return "UP";
   if(ema20 < ema50) return "DOWN";
@@ -83,6 +83,19 @@ async function fetchPrices(){
 fetchPrices();
 setInterval(fetchPrices,1500);
 
+// ================= CANDLES =================
+async function fetchCandles(symbol){
+  try{
+    const res = await axios.get(
+      "https://api.binance.com/api/v3/klines?symbol="+symbol+"&interval=1m&limit=60"
+    );
+
+    coins[symbol].candles = res.data.map(c=>({
+      open:+c[1],high:+c[2],low:+c[3],close:+c[4]
+    }));
+  }catch(e){}
+}
+
 // ================= AI =================
 function aiDecision(h){
   if(h.length < 30) return "hold";
@@ -91,7 +104,6 @@ function aiDecision(h){
 
   let last = h[h.length-1];
   let prev = h[h.length-3];
-
   let momentum = (last - prev) / prev;
 
   if(trend === "UP" && momentum > 0.001) return "buy";
@@ -131,7 +143,7 @@ setInterval(()=>{
       tradeLog.unshift("SHORT "+s);
     }
 
-    // LONG MANAGEMENT
+    // LONG
     if(user.portfolio[s]){
       let change = (coin.price - coin.entry)/coin.entry;
 
@@ -140,13 +152,13 @@ setInterval(()=>{
         user.balance += coin.price * user.portfolio[s];
         user.portfolio[s] = 0;
         coin.entry = null;
-        tradeLog.unshift("STOP LOSS");
         user.stats.trades++;
+        tradeLog.unshift("STOP LOSS");
       }
 
-      // PARTIAL TAKE
+      // PARTIAL
       if(change > 0.004 && !coin.partialSold){
-        let half = user.portfolio[s] / 2;
+        let half = user.portfolio[s]/2;
         user.balance += coin.price * half;
         user.portfolio[s] -= half;
         coin.partialSold = true;
@@ -168,7 +180,7 @@ setInterval(()=>{
           user.stats.trades++;
           user.stats.wins++;
 
-          tradeLog.unshift("BIG WIN +"+gain.toFixed(2));
+          tradeLog.unshift("BIG WIN "+gain.toFixed(2));
         }
 
         if(coin.price > coin.trailing){
@@ -177,16 +189,9 @@ setInterval(()=>{
       }
     }
 
-    // SHORT MANAGEMENT
+    // SHORT EXIT
     if(user.shorts[s]){
       let change = (coin.shortEntry - coin.price)/coin.shortEntry;
-
-      if(change < -0.02){
-        user.shorts[s] = 0;
-        coin.shortEntry = null;
-        tradeLog.unshift("SHORT STOP");
-        user.stats.trades++;
-      }
 
       if(change > 0.01){
         let gain = (coin.shortEntry - coin.price) * user.shorts[s];
@@ -198,7 +203,7 @@ setInterval(()=>{
         user.stats.trades++;
         user.stats.wins++;
 
-        tradeLog.unshift("SHORT WIN +"+gain.toFixed(2));
+        tradeLog.unshift("SHORT WIN "+gain.toFixed(2));
       }
     }
   }
@@ -219,6 +224,11 @@ app.get("/data",(req,res)=>{
   res.json({user,coins,botRunning,tradeLog});
 });
 
+app.get("/candles/:symbol", async (req,res)=>{
+  await fetchCandles(req.params.symbol);
+  res.json(coins[req.params.symbol].candles);
+});
+
 app.post("/bot/start",(req,res)=>{
   botRunning = true;
   res.json({ok:true});
@@ -229,4 +239,50 @@ app.post("/bot/stop",(req,res)=>{
   res.json({ok:true});
 });
 
-app.listen(3000,()=>console.log("🚀 ENHANCED BOT RUNNING"));
+// ================= UI (DEIN ORIGINAL) =================
+app.get("/",(req,res)=>{
+res.send(`
+<html>
+<body style="background:#0b0f14;color:white;font-family:Arial">
+
+<h1 style="text-align:center;font-size:42px">🚀 PRO TERMINAL</h1>
+
+<div style="text-align:center;font-size:22px">
+Balance: $<span id="balance"></span> |
+Profit: $<span id="profit"></span><br>
+
+<span id="status"></span><br><br>
+
+<button onclick="start()">START</button>
+<button onclick="stop()">STOP</button>
+</div>
+
+<div id="coins"></div>
+
+<script>
+async function load(){
+  let d=await (await fetch('/data')).json();
+  balance.innerText=d.user.balance.toFixed(2);
+  profit.innerText=d.user.profit.toFixed(2);
+  status.innerText=d.botRunning?"ACTIVE":"STOP";
+
+  let html="";
+  for(let c in d.coins){
+    html+=c+": "+d.coins[c].price+"<br>";
+  }
+  coins.innerHTML=html;
+}
+
+async function start(){await fetch('/bot/start',{method:'POST'});}
+async function stop(){await fetch('/bot/stop',{method:'POST'});}
+
+setInterval(load,1000);
+load();
+</script>
+
+</body>
+</html>
+`);
+});
+
+app.listen(3000,()=>console.log("✅ BOT FIXED & RUNNING"));
