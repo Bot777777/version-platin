@@ -271,7 +271,48 @@ app.post("/bot/stop",(req,res)=>{
 // ================= UI =================
 // (UNVERÄNDERT)
 app.get("/",(req,res)=>{
-res.send(`...DEIN ORIGINAL UI BLEIBT HIER UNVERÄNDERT...`);
-});
+res.send(`
+<html>
+<body style="background:#0b0f14;color:white;font-family:Arial">
 
-app.listen(3000,()=>console.log("🚀 FINAL FIXED BOT RUNNING"));
+<h1 style="text-align:center;font-size:42px">🚀 PRO TERMINAL</h1>
+
+<div style="text-align:center;font-size:22px">
+Balance: $<span id="balance"></span> |
+Profit: $<span id="profit"></span><br>
+
+<span id="status"></span><br><br>
+
+<button onclick="start()" style="font-size:18px;padding:10px;margin:5px">▶ START</button>
+<button onclick="stop()" style="font-size:18px;padding:10px;margin:5px">⏹ STOP</button>
+</div>
+
+<div style="text-align:center;margin:20px;font-size:18px">
+<h2>📊 Stats</h2>
+<div id="stats"></div>
+</div>
+
+<div style="text-align:center;margin:20px;font-size:18px">
+<h2>📦 Portfolio</h2>
+<div id="portfolio"></div>
+</div>
+
+<div style="text-align:center;margin:20px;font-size:18px">
+<h2>📊 Aktive Trades</h2>
+<div id="positions"></div>
+</div>
+
+<div id="coins" style="display:flex;flex-wrap:wrap;justify-content:center"></div>
+
+<div id="chartContainer" style="margin:auto;width:900px"></div>
+
+<div id="log" style="text-align:center;margin-top:30px"></div>
+
+<script>
+/* DEIN GANZES SCRIPT HIER LASSEN */
+</script>
+
+</body>
+</html>
+`);
+});
