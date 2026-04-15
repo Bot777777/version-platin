@@ -202,7 +202,7 @@ setInterval(()=>{
         tradeLog.unshift("SHORT +"+gain.toFixed(2));
       }
     }
-  }
+  
 
 },800);
 
