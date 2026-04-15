@@ -78,22 +78,54 @@ async function fetchCandles(symbol){
 // ================= AI =================
 function aiDecision(h){
 
-  if(h.length < 10) return "hold";
+  if(h.length < 50) return "hold";
+
+  let state = getMarketState(h);
 
   let a = h[h.length-1];
-  let b = h[h.length-3];
-  let c = h[h.length-6];
+  let b = h[h.length-5];
 
-  let fast = a - b;
-  let slow = b - c;
+  let momentum = (a - b)/b;
 
-  if(fast > 0 && slow >= 0) return "buy";
-  if(fast < 0 && slow <= 0) return "short";
+  // 🚫 Seitwärts → keine Trades
+  if(state === "SIDE") return "hold";
+
+  // 📈 Trend + Momentum
+  if(state === "UP" && momentum > 0.001){
+    return "buy";
+  }
+
+  if(state === "DOWN" && momentum < -0.001){
+    return "short";
+  }
 
   return "hold";
+}// ================= SMART MODE (NEW) =================
+function getEMA(prices, period){
+  let k = 2/(period+1);
+  let ema = prices[0];
+  for(let i=1;i<prices.length;i++){
+    ema = prices[i]*k + ema*(1-k);
+  }
+  return ema;
 }
 
-// ================= BOT =================
+function getMarketState(h){
+  if(h.length < 50) return "NONE";
+
+  let ema20 = getEMA(h.slice(-20),20);
+  let ema50 = getEMA(h.slice(-50),50);
+
+  let diff = Math.abs((ema20 - ema50)/ema50);
+
+  // Seitwärtsmarkt vermeiden
+  if(diff < 0.001) return "SIDE";
+
+  if(ema20 > ema50) return "UP";
+  if(ema20 < ema50) return "DOWN";
+
+  return "SIDE";
+}// ================= BOT =================
 setInterval(()=>{
 
   if(!botRunning) return;
@@ -125,7 +157,7 @@ setInterval(()=>{
     if(user.portfolio[s]){
       let change = (coin.price - coin.entry)/coin.entry;
 
-      if(change > 0.002){ // NEW angepasst
+      if(change > 0.004){ // NEW angepasst
         let gain = (coin.price - coin.entry) * user.portfolio[s];
 
         user.balance += coin.price * user.portfolio[s];
