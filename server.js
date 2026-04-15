@@ -19,7 +19,7 @@ let user = {
   loggedIn: false
 };
 
-let botRunning = false;
+let botRunning = true; // NEW -> startet automatisch (24/7)
 
 // ================= COINS =================
 let symbols = [
@@ -34,34 +34,11 @@ symbols.forEach(s=>{
     history: [],
     entry: null,
     shortEntry: null,
-    candles: [],
-    trailing: null,        // NEW
-    partialSold: false     // NEW
+    candles: []
   };
 });
 
 let tradeLog = [];
-
-// ================= EMA / TREND =================
-function getEMA(prices, period){
-  let k = 2 / (period + 1);
-  let ema = prices[0];
-  for(let i=1;i<prices.length;i++){
-    ema = prices[i] * k + ema * (1 - k);
-  }
-  return ema;
-}
-
-function getTrend(history){
-  if(history.length < 50) return "SIDE";
-
-  let ema50 = getEMA(history.slice(-50),50);
-  let ema20 = getEMA(history.slice(-20),20);
-
-  if(ema20 > ema50) return "UP";
-  if(ema20 < ema50) return "DOWN";
-  return "SIDE";
-}
 
 // ================= PRICES =================
 async function fetchPrices(){
@@ -74,7 +51,7 @@ async function fetchPrices(){
         coins[item.symbol].price = price;
         coins[item.symbol].history.push(price);
 
-        if(coins[item.symbol].history.length > 100){
+        if(coins[item.symbol].history.length > 80){
           coins[item.symbol].history.shift();
         }
       }
@@ -101,17 +78,17 @@ async function fetchCandles(symbol){
 // ================= AI =================
 function aiDecision(h){
 
-  if(h.length < 20) return "hold";
-
-  let trend = getTrend(h);
+  if(h.length < 10) return "hold";
 
   let a = h[h.length-1];
   let b = h[h.length-3];
+  let c = h[h.length-6];
 
-  let momentum = (a - b) / b;
+  let fast = a - b;
+  let slow = b - c;
 
-  if(trend === "UP" && momentum > 0.0005) return "buy";
-  if(trend === "DOWN" && momentum < -0.0005) return "short";
+  if(fast > 0 && slow >= 0) return "buy";
+  if(fast < 0 && slow <= 0) return "short";
 
   return "hold";
 }
@@ -128,79 +105,27 @@ setInterval(()=>{
 
     let decision = aiDecision(coin.history);
 
-    let risk = user.balance * 0.02;
-    let amount = risk / coin.price;
-
     // BUY
     if(decision==="buy" && !user.portfolio[s]){
+      let amount = 0.05;
       user.balance -= coin.price * amount;
       user.portfolio[s] = amount;
       coin.entry = coin.price;
-
-      coin.trailing = null;
-      coin.partialSold = false;
-
       tradeLog.unshift("BUY "+s);
     }
 
     // SHORT
     if(decision==="short" && !user.shorts[s]){
-      user.shorts[s] = amount;
+      user.shorts[s] = 0.05;
       coin.shortEntry = coin.price;
       tradeLog.unshift("SHORT "+s);
     }
 
-    // LONG MANAGEMENT
+    // LONG EXIT
     if(user.portfolio[s]){
       let change = (coin.price - coin.entry)/coin.entry;
 
-      // STOP LOSS
-      if(change < -0.02){
-        user.balance += coin.price * user.portfolio[s];
-        user.portfolio[s] = 0;
-        coin.entry = null;
-
-        user.stats.trades++;
-        tradeLog.unshift("STOP LOSS");
-      }
-
-      // PARTIAL
-      if(change > 0.004 && !coin.partialSold){
-        let half = user.portfolio[s]/2;
-        user.balance += coin.price * half;
-        user.portfolio[s] -= half;
-        coin.partialSold = true;
-      }
-
-      // TRAILING
-      if(change > 0.01){
-
-        if(!coin.trailing) coin.trailing = coin.price * 0.995;
-
-        if(coin.price < coin.trailing){
-          let gain = (coin.price - coin.entry) * user.portfolio[s];
-
-          user.balance += coin.price * user.portfolio[s];
-          user.portfolio[s] = 0;
-          coin.entry = null;
-
-          coin.trailing = null;
-          coin.partialSold = false;
-
-          user.stats.trades++;
-          user.stats.wins++;
-
-          applyProfit();
-          tradeLog.unshift("BIG WIN "+gain.toFixed(2));
-        }
-
-        if(coin.price > coin.trailing){
-          coin.trailing = coin.price * 0.995;
-        }
-      }
-
-      // ORIGINAL EXIT BLEIBT
-      if(change > 0.002){
+      if(change > 0.002){ // NEW angepasst
         let gain = (coin.price - coin.entry) * user.portfolio[s];
 
         user.balance += coin.price * user.portfolio[s];
@@ -215,11 +140,11 @@ setInterval(()=>{
       }
     }
 
-    // SHORT EXIT (ORIGINAL)
+    // SHORT EXIT
     if(user.shorts[s]){
       let change = (coin.shortEntry - coin.price)/coin.shortEntry;
 
-      if(change > 0.0015){
+      if(change > 0.002){ // NEW angepasst
         let gain = (coin.shortEntry - coin.price) * user.shorts[s];
 
         user.balance += gain;
@@ -266,7 +191,7 @@ app.post("/bot/stop",(req,res)=>{
   res.json({ok:true});
 });
 
-// ================= UI (UNVERÄNDERT) =================
+// ================= UI =================
 app.get("/",(req,res)=>{
 res.send(`
 <html>
@@ -278,7 +203,8 @@ res.send(`
 Balance: $<span id="balance"></span> |
 Profit: $<span id="profit"></span><br>
 
-<div id="status" style="font-size:28px;font-weight:bold;margin:15px;"></div><br>
+<span id="status"></span><br><br>
+
 <button onclick="start()" style="font-size:18px;padding:10px;margin:5px">▶ START</button>
 <button onclick="stop()" style="font-size:18px;padding:10px;margin:5px">⏹ STOP</button>
 </div>
@@ -343,25 +269,20 @@ async function loadChart(symbol){
 
 async function load(){
 
- let d;
+  let d=await (await fetch('/data')).json();
 
-try{
-  let res = await fetch('/data');
-  d = await res.json();
-}catch(e){
-  console.log("Fetch error", e);
-  return; // stoppt sauber ohne UI zu killen
-}
   balance.innerText=d.user.balance.toFixed(2);
   profit.innerText=d.user.profit.toFixed(2);
 
+  // NEW bessere Anzeige
   if(d.botRunning){
-  status.innerHTML = "🟢 BOT AKTIV";
-  status.style.color = "lime";
-}else{
-  status.innerHTML = "🔴 BOT INAKTIV";
-  status.style.color = "red";
-}
+    status.innerText="🟢 BOT AKTIV";
+    status.style.color="lime";
+  }else{
+    status.innerText="🔴 BOT INAKTIV";
+    status.style.color="red";
+  }
+
   let trades=d.user.stats.trades;
   let wins=d.user.stats.wins;
   let winrate=trades?(wins/trades*100).toFixed(1):0;
