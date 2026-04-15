@@ -78,29 +78,42 @@ async function fetchCandles(symbol){
 // ================= AI =================
 function aiDecision(h){
 
-  if(h.length < 50) return "hold";
+  if(h.length < 20) return "hold";
 
-  let state = getMarketState(h);
+  let dir = getDirection(h);
 
   let a = h[h.length-1];
-  let b = h[h.length-5];
+  let b = h[h.length-2];
 
   let momentum = (a - b)/b;
 
-  // 🚫 Seitwärts → keine Trades
-  if(state === "SIDE") return "hold";
+  // 🚫 Seitwärts = keine Trades
+  if(dir === "SIDE") return "hold";
 
-  // 📈 Trend + Momentum
-  if(state === "UP" && momentum > 0.001){
+  // 📈 nur im Trend handeln
+  if(dir === "UP" && momentum > 0.0005){
     return "buy";
   }
 
-  if(state === "DOWN" && momentum < -0.001){
+  if(dir === "DOWN" && momentum < -0.0005){
     return "short";
   }
 
   return "hold";
-}// ================= SMART MODE (NEW) =================
+}  
+function getDirection(h){
+  if(h.length < 20) return "SIDE";
+
+  let a = h[h.length-1];
+  let b = h[h.length-10];
+
+  let move = (a - b)/b;
+
+  if(move > 0.003) return "UP";
+  if(move < -0.003) return "DOWN";
+
+  return "SIDE";
+}}// ================= SMART MODE (NEW) =================
 function getEMA(prices, period){
   let k = 2/(period+1);
   let ema = prices[0];
@@ -139,8 +152,7 @@ setInterval(()=>{
 
     // BUY
     if(decision==="buy" && !user.portfolio[s]){
-      let amount = 0.05;
-      user.balance -= coin.price * amount;
+      let amount = (user.balance * 0.15) / coin.price;      user.balance -= coin.price * amount;
       user.portfolio[s] = amount;
       coin.entry = coin.price;
       tradeLog.unshift("BUY "+s);
@@ -157,8 +169,8 @@ setInterval(()=>{
     if(user.portfolio[s]){
       let change = (coin.price - coin.entry)/coin.entry;
 
-      if(change > 0.004){ // NEW angepasst
-        let gain = (coin.price - coin.entry) * user.portfolio[s];
+      if(change > 0.002 || change < -0.002){
+      let gain = (coin.price - coin.entry) * user.portfolio[s];
 
         user.balance += coin.price * user.portfolio[s];
         user.portfolio[s] = 0;
@@ -176,7 +188,7 @@ setInterval(()=>{
     if(user.shorts[s]){
       let change = (coin.shortEntry - coin.price)/coin.shortEntry;
 
-      if(change > 0.002){ // NEW angepasst
+        if(change > 0.002 || change < -0.002){
         let gain = (coin.shortEntry - coin.price) * user.shorts[s];
 
         user.balance += gain;
