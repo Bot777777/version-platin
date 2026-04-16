@@ -78,24 +78,27 @@ async function fetchCandles(symbol){
 // ================= AI =================
 function aiDecision(h){
 
-  if(h.length < 20) return "hold";
+  if(h.length < 30) return "hold";
 
   let a = h[h.length-1];
   let b = h[h.length-2];
   let c = h[h.length-5];
-  let d = h[h.length-10];
+  let d = h[h.length-15];
 
   let shortMove = (a - b)/b;
   let midMove = (a - c)/c;
   let trendMove = (a - d)/d;
 
-  // 📈 STRONG UP TREND
-  if(trendMove > 0.0015 && midMove > 0.0008 && shortMove > 0){
+  // 🔒 nur starke Trends handeln
+  if(Math.abs(trendMove) < 0.0012) return "hold";
+
+  // 📈 LONG
+  if(trendMove > 0.0012 && midMove > 0.0005 && shortMove > 0){
     return "buy";
   }
 
-  // 📉 STRONG DOWN TREND
-  if(trendMove < -0.0015 && midMove < -0.0008 && shortMove < 0){
+  // 📉 SHORT
+  if(trendMove < -0.0012 && midMove < -0.0005 && shortMove < 0){
     return "short";
   }
 
