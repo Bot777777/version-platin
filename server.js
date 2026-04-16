@@ -78,10 +78,10 @@ async function fetchCandles(symbol){
 // ================= AI =================
 function aiDecision(h){
 
-  if(h.length < 20) return "hold";
+  if(h.length < 10) return "hold";
 
-  let dir = getDirection(h);
-
+  let dir = getMarketState(h);
+  
   let a = h[h.length-1];
   let b = h[h.length-2];
 
@@ -89,11 +89,11 @@ function aiDecision(h){
 
   if(dir === "SIDE") return "hold";
 
-  if(dir === "UP" && momentum > 0.0005){
+  if(dir === "UP" && momentum > 0.0002){
     return "buy";
   }
 
-  if(dir === "DOWN" && momentum < -0.0005){
+  if(dir === "DOWN" && momentum < -0.0002){
     return "short";
   }
 
