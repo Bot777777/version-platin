@@ -87,8 +87,8 @@ function aiDecision(h){
 
   let momentum = (a - b)/b;
 
-  if(dir === "SIDE") return "hold";
-
+  if(dir === "SIDE" || dir === "NONE") return "hold";
+  
   if(dir === "UP" && momentum > 0.0002){
     return "buy";
   }
@@ -108,8 +108,8 @@ function getDirection(h){
 
   let move = (a - b)/b;
 
-  if(move > 0.003) return "UP";
-  if(move < -0.003) return "DOWN";
+  if(move > 0.001) return "UP";
+  if(move < -0.001) return "DOWN";
 
   return "SIDE";
 }
