@@ -78,46 +78,26 @@ async function fetchCandles(symbol){
 // ================= AI =================
 function aiDecision(h){
 
-  if(h.length < 10) return "hold";
-  
-if(Math.random() > 0.8) return "buy";
-if(Math.random() < 0.2) return "short";
-  
-  let dir = getMarketState(h);
-  
+  if(h.length < 30) return "hold";
+
   let a = h[h.length-1];
   let b = h[h.length-2];
+  let c = h[h.length-5];
 
-  let momentum = (a - b)/b;
+  let shortMove = (a - b)/b;
+  let midMove = (a - c)/c;
 
-  if(dir === "SIDE" || dir === "NONE") return "hold";
-  
-  if(dir === "UP" && momentum > 0.0002){
+  // 🔥 einfache Trendrichtung
+  if(midMove > 0.001 && shortMove > 0){
     return "buy";
   }
 
-  if(dir === "DOWN" && momentum < -0.0002){
+  if(midMove < -0.001 && shortMove < 0){
     return "short";
   }
 
   return "hold";
-}
-
-function getDirection(h){
-  if(h.length < 20) return "SIDE";
-
-  let a = h[h.length-1];
-  let b = h[h.length-10];
-
-  let move = (a - b)/b;
-
-  if(move > 0.001) return "UP";
-  if(move < -0.001) return "DOWN";
-
-  return "SIDE";
-}
-
-// ================= SMART MODE =================
+}// ================= SMART MODE =================
 function getEMA(prices, period){
   let k = 2/(period+1);
   let ema = prices[0];
