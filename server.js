@@ -24,7 +24,7 @@ let botRunning = true;
 // ================= COINS =================
 let symbols = [
   "BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","ADAUSDT",
-  "BNBUSDT","DOGEUSDT","AVAXUSDT","LINKUSDT","MATICUSDT"
+  "BNBUSDT",","AVAXUSDT","LINKUSDT","MATICUSDT"
 ];
 
 let coins = {};
