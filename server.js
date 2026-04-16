@@ -98,7 +98,9 @@ function aiDecision(h){
   }
 
   return "hold";
-}}// ================= SMART MODE =================
+}
+
+// ================= SMART MODE =================
 function getEMA(prices, period){
   let k = 2/(period+1);
   let ema = prices[0];
