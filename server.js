@@ -78,7 +78,7 @@ async function fetchCandles(symbol){
 // ================= AI =================
 function aiDecision(h){
 
-  if(h.length < 30) return "hold";
+  if(h.length < 20) return "hold";
 
   let a = h[h.length-1];
   let b = h[h.length-2];
@@ -87,17 +87,18 @@ function aiDecision(h){
   let shortMove = (a - b)/b;
   let midMove = (a - c)/c;
 
-  // 🔥 einfache Trendrichtung
+  // 📈 LONG
   if(midMove > 0.001 && shortMove > 0){
     return "buy";
   }
 
+  // 📉 SHORT
   if(midMove < -0.001 && shortMove < 0){
     return "short";
   }
 
   return "hold";
-}// ================= SMART MODE =================
+}}// ================= SMART MODE =================
 function getEMA(prices, period){
   let k = 2/(period+1);
   let ema = prices[0];
@@ -137,7 +138,7 @@ setInterval(()=>{
 
     // BUY
     if(decision==="buy" && !user.portfolio[s]){
-      let amount = (user.balance * 0.15) / coin.price;
+      let amount = (user.balance * 0.3) / coin.price;
       user.balance -= coin.price * amount;
       user.portfolio[s] = amount;
       coin.entry = coin.price;
@@ -146,7 +147,7 @@ setInterval(()=>{
 
     // SHORT
     if(decision==="short" && !user.shorts[s]){
-      user.shorts[s] = 0.05;
+      user.shorts[s] = (user.balance * 0.3) / coin.price;
       coin.shortEntry = coin.price;
       tradeLog.unshift("SHORT "+s);
     }
@@ -155,7 +156,7 @@ setInterval(()=>{
     if(user.portfolio[s]){
       let change = (coin.price - coin.entry)/coin.entry;
 
-      if(change > 0.002 || change < -0.002){
+      if(change > 0.0015 || change < -0.002){
         let gain = (coin.price - coin.entry) * user.portfolio[s];
 
         user.balance += coin.price * user.portfolio[s];
