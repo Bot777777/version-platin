@@ -79,7 +79,10 @@ async function fetchCandles(symbol){
 function aiDecision(h){
 
   if(h.length < 10) return "hold";
-
+  
+if(Math.random() > 0.8) return "buy";
+if(Math.random() < 0.2) return "short";
+  
   let dir = getMarketState(h);
   
   let a = h[h.length-1];
