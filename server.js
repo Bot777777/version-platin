@@ -8,7 +8,7 @@ app.use(express.json());
 
 // ================= USER =================
 let user = {
-  balance: 10000,
+  balance: 500,
   profit: 0,
   portfolio: {},
   shorts: {},
@@ -83,23 +83,24 @@ function aiDecision(h){
   let a = h[h.length-1];
   let b = h[h.length-2];
   let c = h[h.length-5];
+  let d = h[h.length-10];
 
   let shortMove = (a - b)/b;
   let midMove = (a - c)/c;
+  let trendMove = (a - d)/d;
 
-  // 📈 LONG
-  if(midMove > 0.001 && shortMove > 0){
+  // 📈 STRONG UP TREND
+  if(trendMove > 0.0015 && midMove > 0.0008 && shortMove > 0){
     return "buy";
   }
 
-  // 📉 SHORT
-  if(midMove < -0.001 && shortMove < 0){
+  // 📉 STRONG DOWN TREND
+  if(trendMove < -0.0015 && midMove < -0.0008 && shortMove < 0){
     return "short";
   }
 
   return "hold";
 }
-
 // ================= SMART MODE =================
 function getEMA(prices, period){
   let k = 2/(period+1);
@@ -140,7 +141,7 @@ setInterval(()=>{
 
     // BUY
     if(decision==="buy" && !user.portfolio[s]){
-      let amount = (user.balance * 0.3) / coin.price;
+      let amount = (user.balance * 0.4) / coin.price;
       user.balance -= coin.price * amount;
       user.portfolio[s] = amount;
       coin.entry = coin.price;
@@ -149,61 +150,57 @@ setInterval(()=>{
 
     // SHORT
     if(decision==="short" && !user.shorts[s]){
-      user.shorts[s] = (user.balance * 0.3) / coin.price;
+      user.shorts[s] = (user.balance * 0.4) / coin.price;
       coin.shortEntry = coin.price;
       tradeLog.unshift("SHORT "+s);
     }
 
-    // LONG EXIT
-    if(user.portfolio[s]){
-      let change = (coin.price - coin.entry)/coin.entry;
+   // LONG EXIT
+    
+if(user.portfolio[s]){
+  let change = (coin.price - coin.entry)/coin.entry;
 
-      if(change > 0.0015 || change < -0.002){
-        let gain = (coin.price - coin.entry) * user.portfolio[s];
+  if(change > 0.0012 || change < -0.0025){
 
-        user.balance += coin.price * user.portfolio[s];
-        user.portfolio[s] = 0;
-        coin.entry = null;
+    let invested = coin.entry * user.portfolio[s];
+    let returned = coin.price * user.portfolio[s];
+    let gain = returned - invested;
 
-        user.stats.trades++;
-        user.stats.wins++;
+    user.balance += invested;
+    user.profit += gain;
 
-        applyProfit();
-        tradeLog.unshift("LONG +"+gain.toFixed(2));
-      }
-    }
+    user.portfolio[s] = 0;
+    coin.entry = null;
 
-    // SHORT EXIT
-    if(user.shorts[s]){
-      let change = (coin.shortEntry - coin.price)/coin.shortEntry;
+    user.stats.trades++;
+    if(gain > 0) user.stats.wins++;
 
-      if(change > 0.002 || change < -0.002){
-        let gain = (coin.shortEntry - coin.price) * user.shorts[s];
-
-        user.balance += gain;
-        user.shorts[s] = 0;
-        coin.shortEntry = null;
-
-        user.stats.trades++;
-        user.stats.wins++;
-
-        applyProfit();
-        tradeLog.unshift("SHORT +"+gain.toFixed(2));
-      }
-    }
-
+    tradeLog.unshift("LONG +" + gain.toFixed(2));
   }
+}    // SHORT EXIT
+   // SHORT EXIT
+if(user.shorts[s]){
+  let change = (coin.shortEntry - coin.price)/coin.shortEntry;
 
-},800);
+  if(change > 0.0012 || change < -0.0025){
 
-// ================= PROFIT =================
-function applyProfit(){
-  if(user.balance > 10000){
-    let extra = user.balance - 10000;
-    user.profit += extra;
-    user.balance = 10000;
+    let invested = coin.shortEntry * user.shorts[s];
+    let returned = coin.price * user.shorts[s];
+    let gain = invested - returned;
+
+    user.balance += invested;
+    user.profit += gain;
+
+    user.shorts[s] = 0;
+    coin.shortEntry = null;
+
+    user.stats.trades++;
+    if(gain > 0) user.stats.wins++;
+
+    tradeLog.unshift("SHORT +" + gain.toFixed(2));
   }
 }
+// ================= PROFIT =================
 
 // ================= API =================
 app.get("/data",(req,res)=>{
