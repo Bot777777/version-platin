@@ -155,7 +155,6 @@ setInterval(()=>{
       tradeLog.unshift("SHORT "+s);
     }
 
-},800);
 
    // LONG EXIT
     
@@ -200,7 +199,9 @@ if(user.shorts[s]){
 
     tradeLog.unshift("SHORT +" + gain.toFixed(2));
   }
-}   
+} 
+    },800);
+
 // ================= PROFIT =================
 
 // ================= API =================
