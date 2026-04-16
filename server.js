@@ -93,12 +93,12 @@ function aiDecision(h){
   if(Math.abs(trendMove) < 0.0012) return "hold";
 
   // 📈 LONG
-  if(trendMove > 0.0012 && midMove > 0.0005 && shortMove > 0 && shortMove < 0.0006){
+  if(trendMove > 0.0006 && midMove > 0.0002 && shortMove > 0 && shortMove < 0.0002){
   return "buy";
   }
 
   // 📉 SHORT
-  if(trendMove < -0.0012 && midMove < -0.0005 && shortMove < 0 && shortMove > -0.0006){
+  if(trendMove < -0.0006 && midMove < -0.0002 && shortMove < 0 && shortMove > -0.0002){
   return "short";
   }
 
