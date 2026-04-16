@@ -141,7 +141,7 @@ setInterval(()=>{
 
     // BUY
     if(decision==="buy" && !user.portfolio[s]){
-      let amount = (user.balance * 0.4) / coin.price;
+      let amount = (user.balance * 0.7) / coin.price;
       user.balance -= coin.price * amount;
       user.portfolio[s] = amount;
       coin.entry = coin.price;
@@ -150,7 +150,7 @@ setInterval(()=>{
 
     // SHORT
     if(decision==="short" && !user.shorts[s]){
-      user.shorts[s] = (user.balance * 0.4) / coin.price;
+      user.shorts[s] = (user.balance * 0.7) / coin.price;
       coin.shortEntry = coin.price;
       tradeLog.unshift("SHORT "+s);
     }
@@ -183,7 +183,7 @@ if(user.portfolio[s]){
 if(user.shorts[s]){
   let change = (coin.shortEntry - coin.price)/coin.shortEntry;
 
-  if(change > 0.0012 || change < -0.0025){
+  if(change > 0.002 || change < -0.003){
 
     let invested = coin.shortEntry * user.shorts[s];
     let returned = coin.price * user.shorts[s];
