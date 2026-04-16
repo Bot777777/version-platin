@@ -23,10 +23,12 @@ let botRunning = true;
 
 // ================= COINS =================
 let symbols = [
-  "BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","ADAUSDT",
-  "BNBUSDT",","AVAXUSDT","LINKUSDT","MATICUSDT"
+  "BTCUSDT",
+  "ETHUSDT",
+  "SOLUSDT",
+  "AVAXUSDT",
+  "LINKUSDT"
 ];
-
 let coins = {};
 symbols.forEach(s=>{
   coins[s] = {
