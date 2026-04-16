@@ -178,8 +178,8 @@ if(user.portfolio[s]){
 
     tradeLog.unshift("LONG +" + gain.toFixed(2));
   }
-}   
-   // SHORT EXIT
+}      
+    // SHORT EXIT
 if(user.shorts[s]){
   let change = (coin.shortEntry - coin.price)/coin.shortEntry;
 
@@ -197,11 +197,13 @@ if(user.shorts[s]){
     user.stats.trades++;
     if(gain > 0) user.stats.wins++;
 
-    tradeLog.unshift("SHORT +" + gain.toFixed(2));
+   tradeLog.unshift("SHORT +" + gain.toFixed(2));
   }
-} 
-    },800);
+}
 
+  } //  
+
+},800); // 
 // ================= PROFIT =================
 
 // ================= API =================
