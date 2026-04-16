@@ -155,6 +155,8 @@ setInterval(()=>{
       tradeLog.unshift("SHORT "+s);
     }
 
+},800);
+
    // LONG EXIT
     
 if(user.portfolio[s]){
@@ -177,7 +179,7 @@ if(user.portfolio[s]){
 
     tradeLog.unshift("LONG +" + gain.toFixed(2));
   }
-}    // SHORT EXIT
+}   
    // SHORT EXIT
 if(user.shorts[s]){
   let change = (coin.shortEntry - coin.price)/coin.shortEntry;
@@ -190,7 +192,6 @@ if(user.shorts[s]){
 
     user.balance += invested;
     user.profit += gain;
-
     user.shorts[s] = 0;
     coin.shortEntry = null;
 
@@ -199,7 +200,7 @@ if(user.shorts[s]){
 
     tradeLog.unshift("SHORT +" + gain.toFixed(2));
   }
-}
+}   
 // ================= PROFIT =================
 
 // ================= API =================
