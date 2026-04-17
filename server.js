@@ -16,7 +16,7 @@ let user = {
     trades: 0,
     wins: 0
   },
-  loggedIn: false
+  loggedIn: false // ✅ FIX (Komma)
 };
 
 let botRunning = true;
@@ -91,15 +91,20 @@ function aiDecision(h){
   let midMove = (a - c)/c;
   let trendMove = (a - d)/d;
 
-// LONG (schnell reagieren)
-if(midMove > 0.00015 && shortMove > 0){
-  return "buy";
+  // LONG
+  if(midMove > 0.00015 && shortMove > 0){
+    return "buy";
+  }
+
+  // SHORT
+  if(midMove < -0.00015 && shortMove < 0){
+    return "short";
+  }
+
+  return "hold"; // ✅ FIX (Funktion korrekt geschlossen)
 }
 
-// SHORT (schnell reagieren)
-if(midMove < -0.00015 && shortMove < 0){
-  return "short";
-}// ================= SMART MODE =================
+// ================= SMART MODE =================
 function getEMA(prices, period){
   let k = 2/(period+1);
   let ema = prices[0];
@@ -148,64 +153,63 @@ setInterval(()=>{
 
     // SHORT
     if(decision==="short" && !user.shorts[s]){
-    let amount = (user.balance * 0.4) / coin.price;
+      let amount = (user.balance * 0.4) / coin.price;
 
-user.balance -= coin.price * amount;   // 
-user.shorts[s] = amount;
-coin.shortEntry = coin.price;
+      user.balance -= coin.price * amount;
+      user.shorts[s] = amount;
+      coin.shortEntry = coin.price;
       tradeLog.unshift("SHORT "+s);
     }
 
-
    // LONG EXIT
-    
-if(user.portfolio[s]){
-  let change = (coin.price - coin.entry)/coin.entry;
+   if(user.portfolio[s]){
+     let change = (coin.price - coin.entry)/coin.entry;
 
-  if(change > 0.0025 || change < -0.0012){
+     if(change > 0.0025 || change < -0.0012){
 
-    let invested = coin.entry * user.portfolio[s];
-    let returned = coin.price * user.portfolio[s];
-    let gain = returned - invested;
+       let invested = coin.entry * user.portfolio[s];
+       let returned = coin.price * user.portfolio[s];
+       let gain = returned - invested;
 
-    user.balance += invested;
-    user.profit += gain;
+       user.balance += invested;
+       user.profit += gain;
 
-    user.portfolio[s] = 0;
-    coin.entry = null;
+       user.portfolio[s] = 0;
+       coin.entry = null;
 
-    user.stats.trades++;
-    if(gain > 0) user.stats.wins++;
+       user.stats.trades++;
+       if(gain > 0) user.stats.wins++;
 
-    tradeLog.unshift("LONG +" + gain.toFixed(2));
+       tradeLog.unshift("LONG +" + gain.toFixed(2));
+     }
+   }
+
+   // SHORT EXIT
+   if(user.shorts[s]){
+     let change = (coin.shortEntry - coin.price)/coin.shortEntry;
+
+     if(change > 0.0025 || change < -0.0012){
+
+       let invested = coin.shortEntry * user.shorts[s];
+       let returned = coin.price * user.shorts[s];
+       let gain = invested - returned;
+
+       user.balance += invested; // ✅ FIX (korrekt statt returned)
+       user.profit += gain;
+
+       user.shorts[s] = 0;
+       coin.shortEntry = null;
+
+       user.stats.trades++;
+       if(gain > 0) user.stats.wins++;
+
+       tradeLog.unshift("SHORT +" + gain.toFixed(2));
+     }
+   }
+
   }
-}      
-    // SHORT EXIT
-if(user.shorts[s]){
-  let change = (coin.shortEntry - coin.price)/coin.shortEntry;
 
-  if(change > 0.0025 || change < -0.0012){
-
-   let invested = coin.shortEntry * user.shorts[s];
-let returned = coin.price * user.shorts[s];
-let gain = invested - returned;
-
-    user.balance += returned;   // 
-    user.profit += gain;
-    user.shorts[s] = 0;
-    coin.shortEntry = null;
-
-    user.stats.trades++;
-    if(gain > 0) user.stats.wins++;
-
-   tradeLog.unshift("SHORT +" + gain.toFixed(2));
-  }
-
-
-  } //  
-
-},800);  
-// ================= PROFIT =================
+},800);
 
 // ================= API =================
 app.get("/data",(req,res)=>{
