@@ -91,16 +91,16 @@ function aiDecision(h){
   let midMove = (a - c)/c;
   let trendMove = (a - d)/d;
 
-  // ❌ Kein Trade bei Seitwärtsmarkt
-  if(Math.abs(trendMove) < 0.0008) return "hold";
+  // ❌ kein Trend → kein Trade
+  if(Math.abs(trendMove) < 0.001) return "hold";
 
-  // 📈 LONG (nur wenn alles aligned ist)
-  if(trendMove > 0 && midMove > 0.0006 && shortMove > 0){
+  // 📈 LONG: Trend up + kleiner Rücksetzer
+  if(trendMove > 0 && midMove > 0 && shortMove < 0){
     return "buy";
   }
 
-  // 📉 SHORT (nur wenn alles aligned ist)
-  if(trendMove < 0 && midMove < -0.0006 && shortMove < 0){
+  // 📉 SHORT: Trend down + kleiner Bounce
+  if(trendMove < 0 && midMove < 0 && shortMove > 0){
     return "short";
   }
 
@@ -166,7 +166,7 @@ setInterval(()=>{
    if(user.portfolio[s]){
      let change = (coin.price - coin.entry)/coin.entry;
 
-     if(change > 0.004 || change < -0.0015){
+     if(change > 0.003 || change < -0.0008){
 
        let invested = coin.entry * user.portfolio[s];
        let returned = coin.price * user.portfolio[s];
@@ -189,7 +189,7 @@ setInterval(()=>{
    if(user.shorts[s]){
      let change = (coin.shortEntry - coin.price)/coin.shortEntry;
 
-     if(change > 0.004 || change < -0.0015){
+     if(change > 0.003 || change < -0.0008){
 
        let invested = coin.shortEntry * user.shorts[s];
        let returned = coin.price * user.shorts[s];
