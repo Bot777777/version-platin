@@ -142,16 +142,17 @@ setInterval(()=>{
     if(coin.price === 0) continue;
 
    let decision = aiDecision(coin.history);
-
-let market = getMarketState(coin.history);
+   let h = coin.history;
+   let trendMove = (h[h.length-1] - h[h.length-10]) / h[h.length-10];
+   let market = getMarketState(coin.history);
 
 // ❌ kein Trading im Seitwärtsmarkt
 // nur extreme Seitwärtsphasen skippen
 if(market === "SIDE" && Math.abs(coin.history.at(-1) - coin.history.at(-5)) / coin.history.at(-5) < 0.0002) continue;
-// 🎯 nur in Trendrichtung handeln
-if(market === "UP" && decision === "short") continue;
-if(market === "DOWN" && decision === "buy") continue;
-    // BUY
+// 
+// nur harte Gegentrades blockieren
+if(market === "UP" && decision === "short" && Math.abs(trendMove) > 0.001) continue;
+if(market === "DOWN" && decision === "buy" && Math.abs(trendMove) > 0.001) continue;    // BUY
     if(decision==="buy" && !user.portfolio[s]){
       let amount = (user.balance * 0.25) / coin.price;
       user.balance -= coin.price * amount;
