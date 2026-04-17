@@ -88,19 +88,19 @@ function aiDecision(h){
   let d = h[h.length-10];
 
   let shortMove = (a - b)/b;
-  let microMove = (a - c)/c;
+  let midMove = (a - c)/c;
   let trendMove = (a - d)/d;
 
-  // 🚫 Kein Trading bei zu wenig Bewegung
-  if(Math.abs(trendMove) < 0.0006) return "hold";
+  // ❌ Kein Trade bei schwachem Markt
+  if(Math.abs(trendMove) < 0.0007) return "hold";
 
-  // 📈 LONG nur wenn Trend + Bestätigung
-  if(trendMove > 0 && microMove > 0 && shortMove > 0){
+  // 📈 LONG nur bei sauberem Trend
+  if(trendMove > 0 && midMove > 0 && shortMove > 0){
     return "buy";
   }
 
-  // 📉 SHORT nur wenn Trend + Bestätigung
-  if(trendMove < 0 && microMove < 0 && shortMove < 0){
+  // 📉 SHORT nur bei sauberem Trend
+  if(trendMove < 0 && midMove < 0 && shortMove < 0){
     return "short";
   }
 
@@ -145,7 +145,7 @@ setInterval(()=>{
 
     // BUY
     if(decision==="buy" && !user.portfolio[s]){
-      let amount = (user.balance * 0.7) / coin.price;
+      let amount = (user.balance * 0.25) / coin.price;
       user.balance -= coin.price * amount;
       user.portfolio[s] = amount;
       coin.entry = coin.price;
@@ -154,7 +154,7 @@ setInterval(()=>{
 
     // SHORT
     if(decision==="short" && !user.shorts[s]){
-      let amount = (user.balance * 0.4) / coin.price;
+      let amount = (user.balance * 0.25) / coin.price;
 
       user.balance -= coin.price * amount;
       user.shorts[s] = amount;
@@ -166,7 +166,7 @@ setInterval(()=>{
    if(user.portfolio[s]){
      let change = (coin.price - coin.entry)/coin.entry;
 
-     if(change > 0.0022 || change < -0.0012){
+     if(change > 0.0024 || change < -0.0012){
 
        let invested = coin.entry * user.portfolio[s];
        let returned = coin.price * user.portfolio[s];
@@ -189,7 +189,7 @@ setInterval(()=>{
    if(user.shorts[s]){
      let change = (coin.shortEntry - coin.price)/coin.shortEntry;
 
-     if(change > 0.0022 || change < -0.0012){
+     if(change > 0.0024 || change < -0.0012){
 
        let invested = coin.shortEntry * user.shorts[s];
        let returned = coin.price * user.shorts[s];
