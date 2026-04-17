@@ -68,10 +68,27 @@ function startWebSocket(){
       coins[symbol].price = price;
       coins[symbol].history.push(price);
 
-      if(coins[symbol].history.length > 80){
-        coins[symbol].history.shift();
-        
-      }// ================= PRICES =================
+  if(coins[symbol].history.length > 80){
+  coins[symbol].history.shift();
+}
+
+    }catch(e){
+      console.log("WS Error", e.message);
+    }
+  });
+
+  ws.on("close", () => {
+    console.log("WS closed → reconnecting...");
+    setTimeout(startWebSocket, 2000);
+  });
+
+  ws.on("error", () => {
+    ws.close();
+  });
+
+} // ✅ GANZ WICHTIG → schließt startWebSocket()
+
+// ================= PRICES =================
 async function fetchPrices(){
   try{
     const res = await axios.get("https://api.binance.com/api/v3/ticker/price");
