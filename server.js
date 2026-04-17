@@ -15,7 +15,7 @@ let user = {
   stats: {
     trades: 0,
     wins: 0
-  }
+  },
   loggedIn: false
 };
 
