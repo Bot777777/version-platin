@@ -42,8 +42,36 @@ symbols.forEach(s=>{
 });
 
 let tradeLog = [];
+const WebSocket = require("ws");
 
-// ================= PRICES =================
+function startWebSocket(){
+
+  const streams = symbols.map(s => s.toLowerCase() + "@trade").join("/");
+
+  const ws = new WebSocket("wss://stream.binance.com:9443/stream?streams=" + streams);
+
+  ws.on("message", (data) => {
+    try{
+      const parsed = JSON.parse(data);
+
+      if(!parsed.data) return;
+
+      const trade = parsed.data;
+
+      if(!trade.s || !trade.p) return;
+
+      const symbol = trade.s;
+      const price = parseFloat(trade.p);
+
+      if(!coins[symbol]) return;
+
+      coins[symbol].price = price;
+      coins[symbol].history.push(price);
+
+      if(coins[symbol].history.length > 80){
+        coins[symbol].history.shift();
+        
+      }// ================= PRICES =================
 async function fetchPrices(){
   try{
     const res = await axios.get("https://api.binance.com/api/v3/ticker/price");
@@ -133,7 +161,10 @@ function getMarketState(h){
 }
 
 // ================= BOT =================
+startWebSocket();
+
 setInterval(()=>{
+
 
   if(!botRunning) return;
 
@@ -220,7 +251,7 @@ if(market === "DOWN" && decision === "buy" && Math.abs(trendMove) > 0.001) conti
 
   }
 
-},800);
+},400);
 
 // ================= API =================
 app.get("/data",(req,res)=>{
