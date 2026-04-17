@@ -146,11 +146,11 @@ setInterval(()=>{
 let market = getMarketState(coin.history);
 
 // ❌ kein Trading im Seitwärtsmarkt
-if(market === "SIDE") continue;
-
+// nur extreme Seitwärtsphasen skippen
+if(market === "SIDE" && Math.abs(coin.history.at(-1) - coin.history.at(-5)) / coin.history.at(-5) < 0.0005) continue;
 // 🎯 nur in Trendrichtung handeln
-if(market === "UP" && decision !== "buy") continue;
-if(market === "DOWN" && decision !== "short") continue;    
+if(market === "UP" && decision === "short") continue;
+if(market === "DOWN" && decision === "buy") continue;
     // BUY
     if(decision==="buy" && !user.portfolio[s]){
       let amount = (user.balance * 0.25) / coin.price;
