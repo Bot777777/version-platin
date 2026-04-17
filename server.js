@@ -42,7 +42,7 @@ symbols.forEach(s=>{
 });
 
 let tradeLog = [];
-const WebSocket = require("ws");
+
 
 function startWebSocket(){
 
