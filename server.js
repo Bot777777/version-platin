@@ -141,8 +141,16 @@ setInterval(()=>{
     let coin = coins[s];
     if(coin.price === 0) continue;
 
-    let decision = aiDecision(coin.history);
+   let decision = aiDecision(coin.history);
 
+let market = getMarketState(coin.history);
+
+// ❌ kein Trading im Seitwärtsmarkt
+if(market === "SIDE") continue;
+
+// 🎯 nur in Trendrichtung handeln
+if(market === "UP" && decision !== "buy") continue;
+if(market === "DOWN" && decision !== "short") continue;    
     // BUY
     if(decision==="buy" && !user.portfolio[s]){
       let amount = (user.balance * 0.25) / coin.price;
