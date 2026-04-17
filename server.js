@@ -80,7 +80,7 @@ async function fetchCandles(symbol){
 // ================= AI =================
 function aiDecision(h){
 
-  if(h.length < 25) return "hold";
+  if(h.length < 30) return "hold";
 
   let a = h[h.length-1];
   let b = h[h.length-2];
@@ -91,16 +91,16 @@ function aiDecision(h){
   let midMove = (a - c)/c;
   let trendMove = (a - d)/d;
 
-  // ❌ Kein Trade bei schwachem Markt
-  if(Math.abs(trendMove) < 0.0007) return "hold";
+  // ❌ Kein Trade bei Seitwärtsmarkt
+  if(Math.abs(trendMove) < 0.0008) return "hold";
 
-  // 📈 LONG nur bei sauberem Trend
-  if(trendMove > 0 && midMove > 0 && shortMove > 0){
+  // 📈 LONG (nur wenn alles aligned ist)
+  if(trendMove > 0 && midMove > 0.0006 && shortMove > 0){
     return "buy";
   }
 
-  // 📉 SHORT nur bei sauberem Trend
-  if(trendMove < 0 && midMove < 0 && shortMove < 0){
+  // 📉 SHORT (nur wenn alles aligned ist)
+  if(trendMove < 0 && midMove < -0.0006 && shortMove < 0){
     return "short";
   }
 
