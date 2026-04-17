@@ -91,22 +91,15 @@ function aiDecision(h){
   let midMove = (a - c)/c;
   let trendMove = (a - d)/d;
 
-  // 🔒 nur starke Trends handeln
-  if(Math.abs(trendMove) < 0.0012) return "hold";
-
-  // 📈 LONG
-  if(trendMove > 0.0006 && midMove > 0.0002 && shortMove > 0 && shortMove < 0.0002){
+// LONG (schnell reagieren)
+if(midMove > 0.00015 && shortMove > 0){
   return "buy";
-  }
-
-  // 📉 SHORT
-  if(trendMove < -0.0006 && midMove < -0.0002 && shortMove < 0 && shortMove > -0.0002){
-  return "short";
-  }
-
-  return "hold";
 }
-// ================= SMART MODE =================
+
+// SHORT (schnell reagieren)
+if(midMove < -0.00015 && shortMove < 0){
+  return "short";
+}// ================= SMART MODE =================
 function getEMA(prices, period){
   let k = 2/(period+1);
   let ema = prices[0];
