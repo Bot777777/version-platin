@@ -92,7 +92,7 @@ function aiDecision(h){
   let trendMove = (a - d)/d;
 
   // ❌ kein Trend → kein Trade
-  if(Math.abs(trendMove) < 0.0004) return "hold";
+  if(Math.abs(trendMove) < 0.0005) return "hold";
 
   // 📈 LONG: Trend up + kleiner Rücksetzer
   if(trendMove > 0 && midMove > 0 && shortMove < 0){
