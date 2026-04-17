@@ -200,7 +200,7 @@ let gain = invested - returned;
 
    tradeLog.unshift("SHORT +" + gain.toFixed(2));
   }
-}
+
 
   } //  
 
