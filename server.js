@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
+const WebSocket = require("ws");
 
 const app = express();
 app.use(cors());
@@ -61,8 +62,8 @@ async function fetchPrices(){
   }catch(e){}
 }
 
-fetchPrices();
-setInterval(fetchPrices,1500);
+// fetchPrices();
+// setInterval(fetchPrices,1500);
 
 // ================= REAL CANDLES =================
 async function fetchCandles(symbol){
@@ -91,16 +92,16 @@ function aiDecision(h){
   let midMove = (a - c)/c;
   let trendMove = (a - d)/d;
 
-  // ❌ kein Trend → kein Trade
+  // 🔥 minimaler Trend (wichtig!)
   if(Math.abs(trendMove) < 0.0005) return "hold";
 
-  // 📈 LONG: Trend up + kleiner Rücksetzer
-  if(trendMove > 0 && midMove > 0 && shortMove < 0){
+  // 📈 LONG (Pullback im Uptrend)
+  if(trendMove > 0 && midMove > 0 && shortMove < -0.0001){
     return "buy";
   }
 
-  // 📉 SHORT: Trend down + kleiner Bounce
-  if(trendMove < 0 && midMove < 0 && shortMove > 0){
+  // 📉 SHORT (Bounce im Downtrend)
+  if(trendMove < 0 && midMove < 0 && shortMove > 0.0001){
     return "short";
   }
 
@@ -154,7 +155,7 @@ if(market === "SIDE" && Math.abs(coin.history.at(-1) - coin.history.at(-5)) / co
 if(market === "UP" && decision === "short" && Math.abs(trendMove) > 0.001) continue;
 if(market === "DOWN" && decision === "buy" && Math.abs(trendMove) > 0.001) continue;    // BUY
     if(decision==="buy" && !user.portfolio[s]){
-      let amount = (user.balance * 0.25) / coin.price;
+      let amount = (user.balance * 0.15) / coin.price;
       user.balance -= coin.price * amount;
       user.portfolio[s] = amount;
       coin.entry = coin.price;
@@ -163,7 +164,7 @@ if(market === "DOWN" && decision === "buy" && Math.abs(trendMove) > 0.001) conti
 
     // SHORT
     if(decision==="short" && !user.shorts[s]){
-      let amount = (user.balance * 0.25) / coin.price;
+      let amount = (user.balance * 0.15) / coin.price;
 
       user.balance -= coin.price * amount;
       user.shorts[s] = amount;
@@ -175,7 +176,7 @@ if(market === "DOWN" && decision === "buy" && Math.abs(trendMove) > 0.001) conti
    if(user.portfolio[s]){
      let change = (coin.price - coin.entry)/coin.entry;
 
-     if(change > 0.003 || change < -0.0008){
+     if(change > 0.004 || change < -0.00015){
 
        let invested = coin.entry * user.portfolio[s];
        let returned = coin.price * user.portfolio[s];
@@ -198,7 +199,7 @@ if(market === "DOWN" && decision === "buy" && Math.abs(trendMove) > 0.001) conti
    if(user.shorts[s]){
      let change = (coin.shortEntry - coin.price)/coin.shortEntry;
 
-     if(change > 0.003 || change < -0.0008){
+     if(change > 0.004 || change < -0.00015){
 
        let invested = coin.shortEntry * user.shorts[s];
        let returned = coin.price * user.shorts[s];
