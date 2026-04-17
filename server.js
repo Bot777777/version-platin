@@ -92,7 +92,7 @@ function aiDecision(h){
   let trendMove = (a - d)/d;
 
   // ❌ kein Trend → kein Trade
-  if(Math.abs(trendMove) < 0.001) return "hold";
+  if(Math.abs(trendMove) < 0.0004) return "hold";
 
   // 📈 LONG: Trend up + kleiner Rücksetzer
   if(trendMove > 0 && midMove > 0 && shortMove < 0){
@@ -147,7 +147,7 @@ let market = getMarketState(coin.history);
 
 // ❌ kein Trading im Seitwärtsmarkt
 // nur extreme Seitwärtsphasen skippen
-if(market === "SIDE" && Math.abs(coin.history.at(-1) - coin.history.at(-5)) / coin.history.at(-5) < 0.0005) continue;
+if(market === "SIDE" && Math.abs(coin.history.at(-1) - coin.history.at(-5)) / coin.history.at(-5) < 0.0002) continue;
 // 🎯 nur in Trendrichtung handeln
 if(market === "UP" && decision === "short") continue;
 if(market === "DOWN" && decision === "buy") continue;
