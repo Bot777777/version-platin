@@ -166,7 +166,7 @@ setInterval(()=>{
    if(user.portfolio[s]){
      let change = (coin.price - coin.entry)/coin.entry;
 
-     if(change > 0.0024 || change < -0.0012){
+     if(change > 0.004 || change < -0.0015){
 
        let invested = coin.entry * user.portfolio[s];
        let returned = coin.price * user.portfolio[s];
@@ -189,7 +189,7 @@ setInterval(()=>{
    if(user.shorts[s]){
      let change = (coin.shortEntry - coin.price)/coin.shortEntry;
 
-     if(change > 0.0024 || change < -0.0012){
+     if(change > 0.004 || change < -0.0015){
 
        let invested = coin.shortEntry * user.shorts[s];
        let returned = coin.price * user.shorts[s];
