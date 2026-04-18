@@ -137,16 +137,18 @@ function aiDecision(h){
   let midMove = (a - c)/c;
   let trendMove = (a - d)/d;
 
-  // 🔥 minimaler Trend (wichtig!)
-  if(Math.abs(trendMove) < 0.00005) return "hold";
+  // minimaler Trend
+if(Math.abs(trendMove) < 0.0001) return "hold";
 
-if(trendMove > 0 && shortMove <= 0){
+// LONG nur wenn:
+if(trendMove > 0 && shortMove < -0.00005){
   return "buy";
 }
-if(trendMove < 0 && shortMove >= 0){
+
+// SHORT nur wenn:
+if(trendMove < 0 && shortMove > 0.00005){
   return "short";
-}
-  return "hold";
+  
 }// ================= SMART MODE =================
 function getEMA(prices, period){
   let k = 2/(period+1);
@@ -223,7 +225,7 @@ setInterval(()=>{
    if(user.portfolio[s]){
      let change = (coin.price - coin.entry)/coin.entry;
 
-     if(change > 0.004 || change < -0.00015){
+     if(change > 0.0015 || change < -0.0001){
 
        let invested = coin.entry * user.portfolio[s];
        let returned = coin.price * user.portfolio[s];
@@ -246,7 +248,7 @@ setInterval(()=>{
    if(user.shorts[s]){
      let change = (coin.shortEntry - coin.price)/coin.shortEntry;
 
-     if(change > 0.004 || change < -0.00015){
+     if(change > 0.0015 || change < -0.0001){
 
        let invested = coin.shortEntry * user.shorts[s];
        let returned = coin.price * user.shorts[s];
