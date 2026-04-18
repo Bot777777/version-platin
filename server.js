@@ -30,7 +30,7 @@ let symbols = [
   "ETHUSDT",
   "SOLUSDT",
   "AVAXUSDT",
-  "LINKUSDT"
+  "LINKUSDT",
   "BNBUSDT",
 "XRPUSDT",
 "ADAUSDT",
