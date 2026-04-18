@@ -260,7 +260,7 @@ if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
    if(user.portfolio[s]){
      let change = (coin.price - coin.entry)/coin.entry;
 
-     if(change > 0.0018 || change < -0.0007){
+     if(change > 0.0015 || change < -0.0007){
 
        let invested = coin.entry * user.portfolio[s];
        let returned = coin.price * user.portfolio[s];
@@ -284,7 +284,7 @@ fs.appendFileSync("trades.log", logLine);
    if(user.shorts[s]){
      let change = (coin.shortEntry - coin.price)/coin.shortEntry;
 
-     if(change > 0.0018 || change < -0.0007){
+     if(change > 0.0015 || change < -0.0001){
 
        let invested = coin.shortEntry * user.shorts[s];
        let returned = coin.price * user.shorts[s];
