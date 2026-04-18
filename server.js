@@ -130,27 +130,20 @@ function aiDecision(h){
 
   let a = h[h.length-1];
   let b = h[h.length-2];
-  let c = h[h.length-5];
-  let d = h[h.length-10];
 
   let shortMove = (a - b)/b;
-  let midMove = (a - c)/c;
-  let trendMove = (a - d)/d;
 
-  // minimaler Trend
-if(Math.abs(trendMove) < 0.0001) return "hold";
+  // 🔥 DIREKTES SCALPING
 
-// LONG nur wenn:
-if(trendMove > 0 && shortMove < -0.00005){
-  return "buy";
-}
+  if(shortMove < -0.00005){
+    return "buy";
+  }
 
-if(trendMove < 0 && shortMove > 0.00005){
-  return "short";
-}
+  if(shortMove > 0.00005){
+    return "short";
+  }
 
-// ❗ DAS HIER FEHLT BEI DIR:
-return "hold";
+  return "hold";
   
 }// ================= SMART MODE =================
 function getEMA(prices, period){
