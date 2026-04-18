@@ -196,7 +196,8 @@ function getMarketState(h){
 }
 
 // ================= BOT =================
-const TRADE_SIZE = 5; // ✅ 5 USDT pro Trade (safe start)startWebSocket();
+const TRADE_SIZE = 5;
+startWebSocket();
 
 setInterval(()=>{
 
