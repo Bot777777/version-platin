@@ -138,18 +138,14 @@ function aiDecision(h){
   let trendMove = (a - d)/d;
 
   // 🔥 minimaler Trend (wichtig!)
-  if(Math.abs(trendMove) < 0.0005) return "hold";
+  if(Math.abs(trendMove) < 0.0002) return "hold";
 
-  // 📈 LONG (Pullback im Uptrend)
-  if(trendMove > 0 && midMove > 0 && shortMove < -0.0001){
-    return "buy";
-  }
-
-  // 📉 SHORT (Bounce im Downtrend)
-  if(trendMove < 0 && midMove < 0 && shortMove > 0.0001){
-    return "short";
-  }
-
+if(trendMove > 0 && shortMove < 0){
+  return "buy";
+}
+if(trendMove < 0 && shortMove > 0){
+  return "short";
+}
   return "hold";
 }// ================= SMART MODE =================
 function getEMA(prices, period){
