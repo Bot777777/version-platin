@@ -234,26 +234,27 @@ if(user.lastTrade[s] && now - user.lastTrade[s] < 5000){
 // if(market === "DOWN" && decision === "buy" && Math.abs(trendMove) > 0.001) continue; 
     
     // BUY
-    
 if(decision==="buy" && !user.portfolio[s] && !user.shorts[s]){
   let amount = TRADE_SIZE / coin.price;
-      user.balance -= coin.price * amount;
-     // user.balance -= coin.price * amount;
+
+  user.balance -= coin.price * amount;
+  user.portfolio[s] = amount; // ✅ WICHTIG
   coin.entry = coin.price;
+
   user.lastTrade[s] = now;
   tradeLog.unshift("BUY "+s);
-    }
-
+}
     // SHORT
 if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
-  let amount = (user.balance * 0.15) / coin.price;
+  let amount = TRADE_SIZE / coin.price;
 
-      user.balance -= coin.price * amount;
-      user.shorts[s] = amount;
-      coin.shortEntry = coin.price;
-      tradeLog.unshift("SHORT "+s);
-    }
+  user.balance -= coin.price * amount;
+  user.shorts[s] = amount;
+  coin.shortEntry = coin.price;
 
+  user.lastTrade[s] = now;
+  tradeLog.unshift("SHORT "+s);
+}
    // LONG EXIT
    if(user.portfolio[s]){
      let change = (coin.price - coin.entry)/coin.entry;
