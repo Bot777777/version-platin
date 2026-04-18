@@ -196,7 +196,7 @@ function getMarketState(h){
 }
 
 // ================= BOT =================
-const TRADE_SIZE = 5;
+const TRADE_SIZE = 75;
 startWebSocket();
 
 setInterval(()=>{
