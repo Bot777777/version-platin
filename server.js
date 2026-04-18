@@ -140,10 +140,10 @@ function aiDecision(h){
   // 🔥 minimaler Trend (wichtig!)
   if(Math.abs(trendMove) < 0.0002) return "hold";
 
-if(trendMove > 0 && shortMove < 0){
+if(trendMove > 0 && shortMove <= 0){
   return "buy";
 }
-if(trendMove < 0 && shortMove > 0){
+if(trendMove < 0 && shortMove >= 0){
   return "short";
 }
   return "hold";
@@ -195,11 +195,12 @@ setInterval(()=>{
 
 // ❌ kein Trading im Seitwärtsmarkt
 // nur extreme Seitwärtsphasen skippen
-if(market === "SIDE" && Math.abs(coin.history.at(-1) - coin.history.at(-5)) / coin.history.at(-5) < 0.0001) continue;
-// 
+// if(market === "SIDE" && Math.abs(coin.history.at(-1) - coin.history.at(-5)) / coin.history.at(-5) < 0.0001) continue;
+    
 // nur harte Gegentrades blockieren
-if(market === "UP" && decision === "short" && Math.abs(trendMove) > 0.001) continue;
-if(market === "DOWN" && decision === "buy" && Math.abs(trendMove) > 0.001) continue;    // BUY
+// if(market === "UP" && decision === "short" && Math.abs(trendMove) > 0.001) continue;
+// if(market === "DOWN" && decision === "buy" && Math.abs(trendMove) > 0.001) continue;    
+    // BUY
     if(decision==="buy" && !user.portfolio[s]){
       let amount = (user.balance * 0.15) / coin.price;
       user.balance -= coin.price * amount;
