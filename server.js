@@ -138,7 +138,7 @@ function aiDecision(h){
   let trendMove = (a - d)/d;
 
   // 🔥 minimaler Trend (wichtig!)
-  if(Math.abs(trendMove) < 0.0002) return "hold";
+  if(Math.abs(trendMove) < 0.00005) return "hold";
 
 if(trendMove > 0 && shortMove <= 0){
   return "buy";
