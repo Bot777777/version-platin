@@ -135,11 +135,11 @@ function aiDecision(h){
 
   // 🔥 DIREKTES SCALPING
 
-  if(shortMove < -0.00005){
+  if(shortMove < -0.00003){
     return "buy";
   }
 
-  if(shortMove > 0.00005){
+  if(shortMove > 0.00003){
     return "short";
   }
 
@@ -197,10 +197,12 @@ setInterval(()=>{
     
 // nur harte Gegentrades blockieren
 // if(market === "UP" && decision === "short" && Math.abs(trendMove) > 0.001) continue;
-// if(market === "DOWN" && decision === "buy" && Math.abs(trendMove) > 0.001) continue;    
+// if(market === "DOWN" && decision === "buy" && Math.abs(trendMove) > 0.001) continue; 
+    
     // BUY
-    if(decision==="buy" && !user.portfolio[s]){
-      let amount = (user.balance * 0.15) / coin.price;
+    
+if(decision==="buy" && !user.portfolio[s] && !user.shorts[s]){
+  let amount = (user.balance * 0.15) / coin.price;
       user.balance -= coin.price * amount;
       user.portfolio[s] = amount;
       coin.entry = coin.price;
@@ -208,8 +210,8 @@ setInterval(()=>{
     }
 
     // SHORT
-    if(decision==="short" && !user.shorts[s]){
-      let amount = (user.balance * 0.15) / coin.price;
+if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
+  let amount = (user.balance * 0.15) / coin.price;
 
       user.balance -= coin.price * amount;
       user.shorts[s] = amount;
@@ -221,7 +223,7 @@ setInterval(()=>{
    if(user.portfolio[s]){
      let change = (coin.price - coin.entry)/coin.entry;
 
-     if(change > 0.0015 || change < -0.0001){
+     if(change > 0.0015 || change < -0.0007){
 
        let invested = coin.entry * user.portfolio[s];
        let returned = coin.price * user.portfolio[s];
