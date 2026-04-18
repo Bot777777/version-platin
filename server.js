@@ -2,7 +2,14 @@ const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
 const WebSocket = require("ws");
+const fs = require("fs");
+process.on("uncaughtException", (err) => {
+  console.log("UNCAUGHT ERROR:", err);
+});
 
+process.on("unhandledRejection", (err) => {
+  console.log("PROMISE ERROR:", err);
+});
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -255,7 +262,8 @@ if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
 
        user.balance += invested;
        user.profit += gain;
-
+let logLine = `${new Date().toISOString()} | ${s} | LONG | ${gain}\n`;
+fs.appendFileSync("trades.log", logLine);
        user.portfolio[s] = 0;
        coin.entry = null;
 
@@ -278,7 +286,8 @@ if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
 
        user.balance += invested; // ✅ FIX (korrekt statt returned)
        user.profit += gain;
-
+let logLine = `${new Date().toISOString()} | ${s} | SHORT | ${gain}\n`;
+fs.appendFileSync("trades.log", logLine);
        user.shorts[s] = 0;
        coin.shortEntry = null;
 
