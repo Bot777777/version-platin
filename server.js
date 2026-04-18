@@ -31,7 +31,12 @@ let symbols = [
   "SOLUSDT",
   "AVAXUSDT",
   "LINKUSDT"
-];
+  "BNBUSDT",
+"XRPUSDT",
+"ADAUSDT",
+"MATICUSDT",
+"DOGEUSDT"
+  ];
 let coins = {};
 symbols.forEach(s=>{
   coins[s] = {
