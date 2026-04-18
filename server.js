@@ -19,6 +19,7 @@ let user = {
     trades: 0,
     wins: 0
   },
+  maxOpenTrades: 5,
   loggedIn: false // ✅ FIX (Komma)
 };
 
@@ -192,7 +193,12 @@ setInterval(()=>{
   if(!botRunning) return;
 
   for(let s of symbols){
-let now = Date.now();
+    let openTrades =
+  Object.values(user.portfolio).filter(v => v > 0).length +
+  Object.values(user.shorts).filter(v => v > 0).length;
+
+if(openTrades >= user.maxOpenTrades) continue;
+    let now = Date.now();
 
 if(!user.lastTrade) user.lastTrade = {};
 if(user.lastTrade[s] && now - user.lastTrade[s] < 5000){
