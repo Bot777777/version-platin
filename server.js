@@ -2,6 +2,12 @@ const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
 const WebSocket = require("ws");
+const crypto = require("crypto");
+
+const crypto = require("crypto");
+
+const API_KEY = process.env.API_KEY;
+const API_SECRET = process.env.API_SECRET;
 const fs = require("fs");
 process.on("uncaughtException", (err) => {
   console.log("UNCAUGHT ERROR:", err);
@@ -192,7 +198,7 @@ function getMarketState(h){
 }
 
 // ================= BOT =================
-startWebSocket();
+const TRADE_SIZE = 5; // ✅ 5 USDT pro Trade (safe start)startWebSocket();
 
 setInterval(()=>{
 
@@ -232,10 +238,10 @@ if(user.lastTrade[s] && now - user.lastTrade[s] < 5000){
     // BUY
     
 if(decision==="buy" && !user.portfolio[s] && !user.shorts[s]){
-  let amount = (user.balance * 0.15) / coin.price;
+  let amount = TRADE_SIZE / coin.price;
       user.balance -= coin.price * amount;
-      user.portfolio[s] = amount;
-      coin.entry = coin.price;
+     // user.balance -= coin.price * amount;
+  coin.entry = coin.price;
   user.lastTrade[s] = now;
   tradeLog.unshift("BUY "+s);
     }
@@ -260,7 +266,7 @@ if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
        let returned = coin.price * user.portfolio[s];
        let gain = returned - invested;
 
-       user.balance += invested;
+      // user.balance += invested;
        user.profit += gain;
 let logLine = `${new Date().toISOString()} | ${s} | LONG | ${gain}\n`;
 fs.appendFileSync("trades.log", logLine);
@@ -284,7 +290,7 @@ fs.appendFileSync("trades.log", logLine);
        let returned = coin.price * user.shorts[s];
        let gain = invested - returned;
 
-       user.balance += invested; // ✅ FIX (korrekt statt returned)
+       //user.balance += invested; // ✅ FIX (korrekt statt returned)
        user.profit += gain;
 let logLine = `${new Date().toISOString()} | ${s} | SHORT | ${gain}\n`;
 fs.appendFileSync("trades.log", logLine);
