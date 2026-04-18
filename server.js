@@ -197,7 +197,7 @@ setInterval(()=>{
 
 // ❌ kein Trading im Seitwärtsmarkt
 // nur extreme Seitwärtsphasen skippen
-if(market === "SIDE" && Math.abs(coin.history.at(-1) - coin.history.at(-5)) / coin.history.at(-5) < 0.0002) continue;
+if(market === "SIDE" && Math.abs(coin.history.at(-1) - coin.history.at(-5)) / coin.history.at(-5) < 0.0001) continue;
 // 
 // nur harte Gegentrades blockieren
 if(market === "UP" && decision === "short" && Math.abs(trendMove) > 0.001) continue;
