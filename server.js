@@ -8,7 +8,9 @@ app.use(cors());
 app.use(express.json());
 
 // ================= USER =================
+lastTrade: []
 let user = {
+  
   balance: 500,
   profit: 0,
   portfolio: {},
@@ -128,9 +130,13 @@ function aiDecision(h){
 
   if(h.length < 10) return "hold";
 
-  let a = h[h.length-1];
-  let b = h[h.length-2];
+ let a = h[h.length-1];
+let b = h[h.length-2];
+let c = h[h.length-5]; // ✅ HIER hinzufügen
 
+let volatility = Math.abs(a - c) / c;
+
+if(volatility < 0.0002) return "hold";
   let shortMove = (a - b)/b;
 
   // 🔥 DIREKTES SCALPING
@@ -141,6 +147,7 @@ function aiDecision(h){
 
   if(shortMove > 0.00003){
     return "short";
+    
   }
 
   return "hold";
@@ -180,7 +187,12 @@ setInterval(()=>{
   if(!botRunning) return;
 
   for(let s of symbols){
+let now = Date.now();
 
+if(!user.lastTrade) user.lastTrade = {};
+if(user.lastTrade[s] && now - user.lastTrade[s] < 5000){
+  continue;
+}
     let coin = coins[s];
     if(coin.price === 0) continue;
 
@@ -206,7 +218,8 @@ if(decision==="buy" && !user.portfolio[s] && !user.shorts[s]){
       user.balance -= coin.price * amount;
       user.portfolio[s] = amount;
       coin.entry = coin.price;
-      tradeLog.unshift("BUY "+s);
+  user.lastTrade[s] = now;
+  tradeLog.unshift("BUY "+s);
     }
 
     // SHORT
@@ -223,7 +236,7 @@ if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
    if(user.portfolio[s]){
      let change = (coin.price - coin.entry)/coin.entry;
 
-     if(change > 0.0015 || change < -0.0007){
+     if(change > 0.0018 || change < -0.0007){
 
        let invested = coin.entry * user.portfolio[s];
        let returned = coin.price * user.portfolio[s];
@@ -246,7 +259,7 @@ if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
    if(user.shorts[s]){
      let change = (coin.shortEntry - coin.price)/coin.shortEntry;
 
-     if(change > 0.0015 || change < -0.0001){
+     if(change > 0.0018 || change < -0.0007){
 
        let invested = coin.shortEntry * user.shorts[s];
        let returned = coin.price * user.shorts[s];
