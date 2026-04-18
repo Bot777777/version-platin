@@ -306,7 +306,9 @@ fs.appendFileSync("trades.log", logLine);
 app.get("/data",(req,res)=>{
   res.json({user,coins,botRunning,tradeLog});
 });
-
+app.get("/ip", (req,res)=>{
+  res.send(req.ip);
+});
 app.get("/candles/:symbol", async (req,res)=>{
   await fetchCandles(req.params.symbol);
   res.json(coins[req.params.symbol].candles);
