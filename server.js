@@ -126,7 +126,7 @@ async function fetchCandles(symbol){
 // ================= AI =================
 function aiDecision(h){
 
-  if(h.length < 30) return "hold";
+  if(h.length < 10) return "hold";
 
   let a = h[h.length-1];
   let b = h[h.length-2];
@@ -187,8 +187,10 @@ setInterval(()=>{
     if(coin.price === 0) continue;
 
    let decision = aiDecision(coin.history);
-   let h = coin.history;
-   let trendMove = (h[h.length-1] - h[h.length-10]) / h[h.length-10];
+    console.log(s, decision);
+    let h = coin.history;
+    if(h.length < 10) continue;
+    let trendMove = (h[h.length-1] - h[h.length-10]) / h[h.length-10];
    let market = getMarketState(coin.history);
 
 // ❌ kein Trading im Seitwärtsmarkt
