@@ -145,9 +145,12 @@ if(trendMove > 0 && shortMove < -0.00005){
   return "buy";
 }
 
-// SHORT nur wenn:
 if(trendMove < 0 && shortMove > 0.00005){
   return "short";
+}
+
+// ❗ DAS HIER FEHLT BEI DIR:
+return "hold";
   
 }// ================= SMART MODE =================
 function getEMA(prices, period){
@@ -440,4 +443,4 @@ load();
 `);
 });
 
-app.listen(3000,()=>console.log("🚀 FINAL FIXED BOT RUNNING"));
+app.listen(3000,()=>console.log("🚀 FINAL FIXED BOT RUNNING")); 
