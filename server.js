@@ -196,7 +196,9 @@ function getMarketState(h){
 }
 
 // ================= BOT =================
-const TRADE_SIZE = 75;
+const TRADE_SIZE = 20;
+const FEE = 0.001; 
+
 startWebSocket();
 
 setInterval(()=>{
@@ -238,7 +240,7 @@ if(user.lastTrade[s] && now - user.lastTrade[s] < 5000){
 if(decision==="buy" && !user.portfolio[s] && !user.shorts[s]){
   let amount = TRADE_SIZE / coin.price;
 
-  user.balance -= coin.price * amount;
+ 
   user.portfolio[s] = amount; // ✅ WICHTIG
   coin.entry = coin.price;
 
@@ -249,7 +251,7 @@ if(decision==="buy" && !user.portfolio[s] && !user.shorts[s]){
 if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
   let amount = TRADE_SIZE / coin.price;
 
-  user.balance -= coin.price * amount;
+  
   user.shorts[s] = amount;
   coin.shortEntry = coin.price;
 
@@ -264,8 +266,9 @@ if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
 
        let invested = coin.entry * user.portfolio[s];
        let returned = coin.price * user.portfolio[s];
-       let gain = returned - invested;
-
+       let fee = returned * FEE;
+       let gain = (returned - invested) - fee;
+       
       // user.balance += invested;
        user.profit += gain;
 let logLine = `${new Date().toISOString()} | ${s} | LONG | ${gain}\n`;
@@ -288,8 +291,9 @@ fs.appendFileSync("trades.log", logLine);
 
        let invested = coin.shortEntry * user.shorts[s];
        let returned = coin.price * user.shorts[s];
-       let gain = invested - returned;
-
+       let fee = returned * FEE;
+       let gain = (invested - returned) - fee;
+       
        //user.balance += invested; // ✅ FIX (korrekt statt returned)
        user.profit += gain;
 let logLine = `${new Date().toISOString()} | ${s} | SHORT | ${gain}\n`;
