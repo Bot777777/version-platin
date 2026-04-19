@@ -372,8 +372,9 @@ coin.entryTime = Date.now();
   user.lastTrade[s] = now;
   tradeLog.unshift("SHORT "+s);
    user.globalLastTrade = now;
+   }
   }
- 
+ }
 },400);
 
 // ================= API =================
