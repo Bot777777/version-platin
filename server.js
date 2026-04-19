@@ -216,7 +216,7 @@ function getMarketState(h){
 }
 
 // ================= BOT =================
-const TRADE_SIZE = 20;
+const TRADE_SIZE = 150;
 const FEE = 0.002; 
 
 startWebSocket();
@@ -232,73 +232,7 @@ for(let s of symbols){
   if(coin.price === 0) continue;
 
   // ================= EXIT IMMER ZUERST =================
-  if(user.portfolio[s]){
-    let change = (coin.price - coin.entry)/coin.entry;
-    let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
-
-    if(
   
-      change > 0.003 ||
-      change < -0.0012 ||
-      duration > 60000
-    ){
-      let invested = coin.entry * user.portfolio[s];
-      let returned = coin.price * user.portfolio[s];
-      let fee = returned * FEE;
-
-      user.fees += fee;
-      let gain = (returned - invested) - fee;
-
-      user.balance += returned;
-      user.profit += gain;
-
-      let logLine = `${new Date().toISOString()} | ${s} | LONG | ${gain}\n`;
-      fs.appendFileSync("trades.log", logLine);
-
-      user.portfolio[s] = 0;
-      coin.entry = null;
-      coin.entryTime = null;
-
-      user.stats.trades++;
-      if(gain > 0) user.stats.wins++;
-
-      tradeLog.unshift("LONG " + gain.toFixed(2));
-    }
-  }
-
-  if(user.shorts[s]){
-    let change = (coin.shortEntry - coin.price)/coin.shortEntry;
-    let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
-
-    if(
-     
-      change > 0.003 ||
-      change < -0.002 ||
-      duration > 60000
-    ){
-      let invested = coin.shortEntry * user.shorts[s];
-      let returned = coin.price * user.shorts[s];
-      let fee = returned * FEE;
-
-      user.fees += fee;
-      let gain = (invested - returned) - fee;
-
-      user.balance += invested;
-      user.profit += gain;
-
-      let logLine = `${new Date().toISOString()} | ${s} | SHORT | ${gain}\n`;
-      fs.appendFileSync("trades.log", logLine);
-
-      user.shorts[s] = 0;
-      coin.shortEntry = null;
-      coin.entryTime = null;
-
-      user.stats.trades++;
-      if(gain > 0) user.stats.wins++;
-
-      tradeLog.unshift("SHORT " + gain.toFixed(2));
-    }
-  }
 
   // ================= LIMIT NACH EXIT =================
   let openTrades =
@@ -377,8 +311,8 @@ if(user.portfolio[s]){
 
   if(
    
-    change > 0.003 ||    // großer Gewinn
-    change < -0.0015 ||   // Stop Loss
+    change > 0.004 ||    // großer Gewinn
+    change < -0.004 ||   // Stop Loss
     duration > 60000     // Zeitlimit
   ){
 
@@ -414,8 +348,8 @@ if(user.portfolio[s]){
 
 if(
 
-  change > 0.003 ||
-  change < -0.0015 ||
+  change > 0.004 ||
+  change < -0.004 ||
   duration > 60000
 ){
   let invested = coin.shortEntry * user.shorts[s];
