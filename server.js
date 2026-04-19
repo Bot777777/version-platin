@@ -237,9 +237,9 @@ for(let s of symbols){
     let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
     if(
-      change > 0.0012 ||
+  
       change > 0.003 ||
-      change < -0.002 ||
+      change < -0.0012 ||
       duration > 60000
     ){
       let invested = coin.entry * user.portfolio[s];
@@ -271,7 +271,7 @@ for(let s of symbols){
     let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
     if(
-      change > 0.0012 ||
+      ||
       change > 0.003 ||
       change < -0.002 ||
       duration > 60000
@@ -378,9 +378,9 @@ if(user.portfolio[s]){
   let duration = Date.now() - coin.entryTime;
 
   if(
-    change > 0.0012 ||   // kleiner Gewinn
+   
     change > 0.003 ||    // großer Gewinn
-    change < -0.005 ||   // Stop Loss
+    change < -0.0015 ||   // Stop Loss
     duration > 60000     // Zeitlimit
   ){
 
@@ -415,9 +415,9 @@ if(user.portfolio[s]){
      let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
 if(
-  change > 0.0012 ||
+
   change > 0.003 ||
-  change < -0.005 ||
+  change < -0.0015 ||
   duration > 60000
 ){
   let invested = coin.shortEntry * user.shorts[s];
