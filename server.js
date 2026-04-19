@@ -214,8 +214,8 @@ function getMarketState(h){
 }
 
 // ================= BOT =================
-const TRADE_SIZE = 150;
-const FEE = 0.002; 
+const TRADE_SIZE = 50;
+const FEE = 0.001; 
 
 startWebSocket();
 
