@@ -144,21 +144,46 @@ async function fetchCandles(symbol){
 }
 
 // ================= AI =================
+function getRSI(prices, period = 14){
+  if(prices.length < period + 1) return 50;
+
+  let gains = 0;
+  let losses = 0;
+
+  for(let i = prices.length - period; i < prices.length; i++){
+    let diff = prices[i] - prices[i-1];
+    if(diff >= 0) gains += diff;
+    else losses -= diff;
+  }
+
+  let rs = gains / (losses || 1);
+  return 100 - (100 / (1 + rs));
+}
+
 function aiDecision(h){
 
   if(h.length < 50) return "hold";
 
   let ema20 = getEMA(h.slice(-20), 20);
   let ema50 = getEMA(h.slice(-50), 50);
-
   let price = h[h.length - 1];
+  let rsi = getRSI(h);
 
-  // TREND FOLLOWING
-  if(ema20 > ema50 && price > ema20){
+  // 🔥 LONG
+  if(
+    ema20 > ema50 &&        // Trend up
+    price > ema20 &&        // über EMA
+    rsi < 40                // Rücksetzer!
+  ){
     return "buy";
   }
 
-  if(ema20 < ema50 && price < ema20){
+  // 🔥 SHORT
+  if(
+    ema20 < ema50 &&        // Trend down
+    price < ema20 &&        // unter EMA
+    rsi > 60                // Rücksetzer!
+  ){
     return "short";
   }
 
