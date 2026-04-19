@@ -236,7 +236,16 @@ if(user.portfolio[s]){
   let change = (coin.price - coin.entry)/coin.entry;
   let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
-  if(duration > 60000){
+ if(user.portfolio[s]){
+
+  let change = (coin.price - coin.entry) / coin.entry;
+  let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
+
+  if(
+    change > 0.003 ||      // Take Profit (+0.3%)
+    change < -0.002 ||     // Stop Loss (-0.2%)
+    duration > 60000       // Max 60 Sekunden
+  ){
 
     let invested = coin.entry * user.portfolio[s];
     let returned = coin.price * user.portfolio[s];
@@ -261,14 +270,17 @@ if(user.portfolio[s]){
 
     continue;
   }
-}
-  // SHORT EXIT
-if(user.shorts[s]){
+}  // SHORT EXIT
+  if(user.shorts[s]){
 
-  let change = (coin.shortEntry - coin.price)/coin.shortEntry;
+  let change = (coin.shortEntry - coin.price) / coin.shortEntry;
   let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
-  if(duration > 60000){
+  if(
+    change > 0.003 ||      // Gewinn (+0.3%)
+    change < -0.002 ||     // Stop Loss (-0.2%)
+    duration > 60000       // Max 60 Sekunden
+  ){
 
     let invested = coin.shortEntry * user.shorts[s];
     let returned = coin.price * user.shorts[s];
@@ -293,7 +305,7 @@ if(user.shorts[s]){
 
     continue;
   }
-}  // ================= LIMIT NACH EXIT =================
+} // ================= LIMIT NACH EXIT =================
   let openTrades =
     Object.values(user.portfolio).filter(v => v > 0).length +
     Object.values(user.shorts).filter(v => v > 0).length;
