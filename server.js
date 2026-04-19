@@ -232,9 +232,66 @@ for(let s of symbols){
   if(coin.price === 0) continue;
 
   // ================= EXIT IMMER ZUERST =================
-  
+  // LONG EXIT
+if(user.portfolio[s]){
+  let change = (coin.price - coin.entry)/coin.entry;
+  let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
-  // ================= LIMIT NACH EXIT =================
+ if(duration > 60000){
+
+  let invested = coin.entry * user.portfolio[s];
+  let returned = coin.price * user.portfolio[s];
+  let fee = returned * FEE;
+
+  user.fees += fee;
+
+  let gain = (returned - invested) - fee;
+
+  user.balance += returned;
+  user.profit += gain;
+
+  let logLine = `${new Date().toISOString()} | ${s} | LONG | ${gain}\n`;
+  fs.appendFileSync("trades.log", logLine);
+
+  user.portfolio[s] = 0;
+  coin.entry = null;
+  coin.entryTime = null;
+
+  user.stats.trades++;
+  if(gain > 0) user.stats.wins++;
+
+  continue;
+}
+// SHORT EXIT
+if(user.shorts[s]){
+  let change = (coin.shortEntry - coin.price)/coin.shortEntry;
+  let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
+
+ if(duration > 60000){
+
+  let invested = coin.shortEntry * user.shorts[s];
+  let returned = coin.price * user.shorts[s];
+  let fee = returned * FEE;
+
+  user.fees += fee;
+
+  let gain = (invested - returned) - fee;
+
+  user.balance += invested;
+  user.profit += gain;
+
+  let logLine = `${new Date().toISOString()} | ${s} | SHORT | ${gain}\n`;
+  fs.appendFileSync("trades.log", logLine);
+
+  user.shorts[s] = 0;
+  coin.shortEntry = null;
+  coin.entryTime = null;
+
+  user.stats.trades++;
+  if(gain > 0) user.stats.wins++;
+
+  continue;
+}  // ================= LIMIT NACH EXIT =================
   let openTrades =
     Object.values(user.portfolio).filter(v => v > 0).length +
     Object.values(user.shorts).filter(v => v > 0).length;
@@ -302,80 +359,7 @@ coin.entryTime = Date.now();
   tradeLog.unshift("SHORT "+s);
    user.globalLastTrade = now;
 }
-   // LONG EXIT
-   // ================= LONG EXIT =================
-if(user.portfolio[s]){
 
-  let change = (coin.price - coin.entry)/coin.entry;
-  let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
-
-  if( duration > 60000 ){ 
-    
-     let invested = coin.entry * user.portfolio[s];
-     let returned = coin.price * user.portfolio[s];
-     let fee = returned * FEE;
-    
-   user.fees += fee;
-
-     let gain = (returned - invested) - fee;
-
-    user.balance += returned;
-    user.profit += gain;
-
-    let logLine = `${new Date().toISOString()} | ${s} | LONG | ${gain}\n`;
-    fs.appendFileSync("trades.log", logLine);
-
-    user.portfolio[s] = 0;
-    coin.entry = null;
-    coin.entryTime = null;
-
-    user.stats.trades++;
-    if(gain > 0) user.stats.wins++;
-    continue;
-    }
-  if(
-    change > 0.004 ||    // großer Gewinn
-    change < -0.004    // Stop Loss
-   
-  ){
-
-   
-    tradeLog.unshift("LONG " + gain.toFixed(2));
-  }
-}
-   // SHORT EXIT
-   if(user.shorts[s]){
-     let change = (coin.shortEntry - coin.price)/coin.shortEntry;
-
-     let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
-
-if(duration > 60000){
-  }
-if(
-  change > 0.004 ||
-  change < -0.004 
- 
-){
-  let invested = coin.shortEntry * user.shorts[s];
-       let returned = coin.price * user.shorts[s];
-      let fee = returned * FEE;
-       user.fees += fee; // ✅ NEU
-       let gain = (invested - returned) - fee;       
-       user.balance += invested; // ✅ FIX (korrekt statt returned)
-       user.profit += gain;
-let logLine = `${new Date().toISOString()} | ${s} | SHORT | ${gain}\n`;
-fs.appendFileSync("trades.log", logLine);
-       user.shorts[s] = 0;
-       coin.shortEntry = null;
-coin.entryTime = null;
-       user.stats.trades++;
-       if(gain > 0) user.stats.wins++;
-
-       tradeLog.unshift("SHORT +" + gain.toFixed(2));
-     }
-   }
-
-  }
 
 },400);
 
