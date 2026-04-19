@@ -261,7 +261,7 @@ if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
 if(duration > 60000){
   
   let change = (coin.price - coin.entry)/coin.entry;
-if/change > 0.0012){
+if(change) > 0.0012){
      closeTrade;
     }
      if(change > 0.003 || change < -0.002){
