@@ -307,22 +307,17 @@ coin.entryTime = Date.now();
 if(user.portfolio[s]){
 
   let change = (coin.price - coin.entry)/coin.entry;
-  let duration = Date.now() - coin.entryTime;
+  let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
-  if(
-   
-    change > 0.004 ||    // großer Gewinn
-    change < -0.004 ||   // Stop Loss
-    duration > 60000     // Zeitlimit
-  ){
+  if( duration > 60000 ){ 
+    
+     let invested = coin.entry * user.portfolio[s];
+     let returned = coin.price * user.portfolio[s];
+     let fee = returned * FEE;
+    
+   user.fees += fee;
 
-    let invested = coin.entry * user.portfolio[s];
-    let returned = coin.price * user.portfolio[s];
-
-    let fee = returned * FEE;
-    user.fees += fee;
-
-    let gain = (returned - invested) - fee;
+     let gain = (returned - invested) - fee;
 
     user.balance += returned;
     user.profit += gain;
@@ -336,7 +331,15 @@ if(user.portfolio[s]){
 
     user.stats.trades++;
     if(gain > 0) user.stats.wins++;
+    continue;
+    }
+  if(
+    change > 0.004 ||    // großer Gewinn
+    change < -0.004    // Stop Loss
+   
+  ){
 
+   
     tradeLog.unshift("LONG " + gain.toFixed(2));
   }
 }
@@ -346,11 +349,12 @@ if(user.portfolio[s]){
 
      let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
+if(duration > 60000){
+  }
 if(
-
   change > 0.004 ||
-  change < -0.004 ||
-  duration > 60000
+  change < -0.004 
+ 
 ){
   let invested = coin.shortEntry * user.shorts[s];
        let returned = coin.price * user.shorts[s];
