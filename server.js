@@ -254,39 +254,43 @@ if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
   tradeLog.unshift("SHORT "+s);
 }
    // LONG EXIT
-   if(user.portfolio[s]){
-     let duration = Date.now() - coin.entryTime;
-
-// 🔥 nach 60 Sekunden raus egal was
-if(duration > 60000){
+   // ================= LONG EXIT =================
+if(user.portfolio[s]){
 
   let change = (coin.price - coin.entry)/coin.entry;
-if(change > 0.0012){
-     closeTrade;
-    }
-     if(change > 0.003 || change < -0.002){
-closeTrade;
-  }     
-       let invested = coin.entry * user.portfolio[s];
-       let returned = coin.price * user.portfolio[s];
-       let fee = returned * FEE;
-     user.fees += fee; 
-       let gain = (returned - invested) - fee;
+  let duration = Date.now() - coin.entryTime;
 
-       user.balance += returned; 
-       user.profit += gain;
-let logLine = `${new Date().toISOString()} | ${s} | LONG | ${gain}\n`;
-fs.appendFileSync("trades.log", logLine);
-       user.portfolio[s] = 0;
-       coin.entry = null;
+  if(
+    change > 0.0012 ||   // kleiner Gewinn
+    change > 0.003 ||    // großer Gewinn
+    change < -0.002 ||   // Stop Loss
+    duration > 60000     // Zeitlimit
+  ){
 
-       user.stats.trades++;
-       if(gain > 0) user.stats.wins++;
+    let invested = coin.entry * user.portfolio[s];
+    let returned = coin.price * user.portfolio[s];
 
-       tradeLog.unshift("LONG +" + gain.toFixed(2));
-     }
-   }
+    let fee = returned * FEE;
+    user.fees += fee;
 
+    let gain = (returned - invested) - fee;
+
+    user.balance += returned;
+    user.profit += gain;
+
+    let logLine = `${new Date().toISOString()} | ${s} | LONG | ${gain}\n`;
+    fs.appendFileSync("trades.log", logLine);
+
+    user.portfolio[s] = 0;
+    coin.entry = null;
+    coin.entryTime = null;
+
+    user.stats.trades++;
+    if(gain > 0) user.stats.wins++;
+
+    tradeLog.unshift("LONG " + gain.toFixed(2));
+  }
+}
    // SHORT EXIT
    if(user.shorts[s]){
      let change = (coin.shortEntry - coin.price)/coin.shortEntry;
