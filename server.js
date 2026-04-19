@@ -170,7 +170,7 @@ function aiDecision(h){
   // 🔥 LONG
   if(
     ema20 > ema50 &&        // Trend up
-    price > ema20 &&        // über EMA
+    price < ema20 &&        // über EMA
     rsi < 40                // Rücksetzer!
   ){
     return "buy";
@@ -179,7 +179,7 @@ function aiDecision(h){
   // 🔥 SHORT
   if(
     ema20 < ema50 &&        // Trend down
-    price < ema20 &&        // unter EMA
+    price > ema20 &&        // unter EMA
     rsi > 60                // Rücksetzer!
   ){
     return "short";
@@ -264,7 +264,7 @@ if(user.portfolio[s]){
 
     user.stats.trades++;
     if(gain > 0) user.stats.wins++;
-
+    user.lastTrade[s] = Date.now();
     continue;
   }
 }  // SHORT EXIT
@@ -299,7 +299,7 @@ if(user.portfolio[s]){
 
     user.stats.trades++;
     if(gain > 0) user.stats.wins++;
-
+    user.lastTrade[s] = Date.now();
     continue;
   }
 } // ================= LIMIT NACH EXIT =================
@@ -313,7 +313,7 @@ if(user.portfolio[s]){
   let now = Date.now();
 
   if(!user.lastTrade) user.lastTrade = {};
-  if(user.lastTrade[s] && now - user.lastTrade[s] < 30000){
+  if(user.lastTrade[s] && now - user.lastTrade[s] < 120000){
     continue;
   }
 
