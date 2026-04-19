@@ -240,7 +240,7 @@ if(user.lastTrade[s] && now - user.lastTrade[s] < 5000){
     // BUY
 if(decision==="buy" && !user.portfolio[s] && !user.shorts[s]){
   let amount = TRADE_SIZE / coin.price;
-
+  user.balance -= TRADE_SIZE;
  
   user.portfolio[s] = amount; // ✅ WICHTIG
   coin.entry = coin.price;
@@ -251,7 +251,7 @@ if(decision==="buy" && !user.portfolio[s] && !user.shorts[s]){
     // SHORT
 if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
   let amount = TRADE_SIZE / coin.price;
-
+  user.balance -= TRADE_SIZE;
   
   user.shorts[s] = amount;
   coin.shortEntry = coin.price;
@@ -271,7 +271,7 @@ if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
      user.fees += fee; 
        let gain = (returned - invested) - fee;
        
-      // user.balance += invested; 
+       user.balance += returned; 
        user.profit += gain;
 let logLine = `${new Date().toISOString()} | ${s} | LONG | ${gain}\n`;
 fs.appendFileSync("trades.log", logLine);
@@ -296,7 +296,7 @@ fs.appendFileSync("trades.log", logLine);
       let fee = returned * FEE;
        user.fees += fee; // ✅ NEU
        let gain = (invested - returned) - fee;       
-       //user.balance += invested; // ✅ FIX (korrekt statt returned)
+       user.balance += invested; // ✅ FIX (korrekt statt returned)
        user.profit += gain;
 let logLine = `${new Date().toISOString()} | ${s} | SHORT | ${gain}\n`;
 fs.appendFileSync("trades.log", logLine);
