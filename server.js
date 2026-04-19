@@ -206,10 +206,14 @@ setInterval(()=>{
   Object.values(user.portfolio).filter(v => v > 0).length +
   Object.values(user.shorts).filter(v => v > 0).length;
 
-if(openTrades >= user.maxOpenTrades) continue;
+if(openTrades >= user.maxOpenTrades) break;
     let now = Date.now();
+if(!user.globalLastTrade) user.globalLastTrade = 0;
 
-if(!user.lastTrade) user.lastTrade = {};
+if(now - user.globalLastTrade < 5000){
+  continue;
+}
+    if(!user.lastTrade) user.lastTrade = {};
 if(user.lastTrade[s] && now - user.lastTrade[s] < 30000){
   continue;
 }
@@ -241,6 +245,7 @@ if(decision==="buy" && !user.portfolio[s] && !user.shorts[s]){
 coin.entryTime = Date.now();
   user.lastTrade[s] = now;
   tradeLog.unshift("BUY "+s);
+  user.globalLastTrade = now;
 }
     // SHORT
 if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
@@ -252,6 +257,7 @@ if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
 
   user.lastTrade[s] = now;
   tradeLog.unshift("SHORT "+s);
+   user.globalLastTrade = now;
 }
    // LONG EXIT
    // ================= LONG EXIT =================
