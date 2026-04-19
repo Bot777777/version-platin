@@ -249,71 +249,96 @@ if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
   
   user.shorts[s] = amount;
   coin.shortEntry = coin.price;
-
+  coin.entryTime = Date.now();
   user.lastTrade[s] = now;
   tradeLog.unshift("SHORT "+s);
 }
-   // LONG EXIT
-   if(user.portfolio[s]){
-     let duration = Date.now() - coin.entryTime;
+// ================= LONG EXIT =================
+if(user.portfolio[s]){
 
-// 🔥 nach 60 Sekunden raus egal was
-if(duration > 60000){
-  
-  let change = (coin.price - coin.entry)/coin.entry;
-if(change > 0.0012){
-     closeTrade;
-    }
-     if(change > 0.003 || change < -0.002){
-closeTrade;
-  }     
-       let invested = coin.entry * user.portfolio[s];
-       let returned = coin.price * user.portfolio[s];
-       let fee = returned * FEE;
-     user.fees += fee; 
-       let gain = (returned - invested) - fee;
-       
-       user.balance += returned; 
-       user.profit += gain;
-let logLine = `${new Date().toISOString()} | ${s} | LONG | ${gain}\n`;
-fs.appendFileSync("trades.log", logLine);
-       user.portfolio[s] = 0;
-       coin.entry = null;
+  // Preisveränderung berechnen
+  let change = (coin.price - coin.entry) / coin.entry;
 
-       user.stats.trades++;
-       if(gain > 0) user.stats.wins++;
+  // Zeit seit Einstieg
+  let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
-       tradeLog.unshift("LONG +" + gain.toFixed(2));
-     }
-   }
+  // 🔥 EXIT BEDINGUNGEN
+  if(
+    change > 0.0012 ||      // kleiner Gewinn
+    change > 0.003 ||       // großer Gewinn
+    change < -0.002 ||      // Stop Loss
+    duration > 60000        // nach 60 Sekunden raus
+  ){
 
-   // SHORT EXIT
-   if(user.shorts[s]){
-     let change = (coin.shortEntry - coin.price)/coin.shortEntry;
+    let amount = user.portfolio[s];
 
-     if(change > 0.003 || change < -0.002){
+    let invested = coin.entry * amount;
+    let returned = coin.price * amount;
 
-       let invested = coin.shortEntry * user.shorts[s];
-       let returned = coin.price * user.shorts[s];
-      let fee = returned * FEE;
-       user.fees += fee; // ✅ NEU
-       let gain = (invested - returned) - fee;       
-       user.balance += invested; // ✅ FIX (korrekt statt returned)
-       user.profit += gain;
-let logLine = `${new Date().toISOString()} | ${s} | SHORT | ${gain}\n`;
-fs.appendFileSync("trades.log", logLine);
-       user.shorts[s] = 0;
-       coin.shortEntry = null;
+    let fee = returned * FEE;
+    user.fees += fee;
 
-       user.stats.trades++;
-       if(gain > 0) user.stats.wins++;
+    let gain = (returned - invested) - fee;
 
-       tradeLog.unshift("SHORT +" + gain.toFixed(2));
-     }
-   }
+    // 💰 BALANCE korrekt zurückgeben
+    user.balance += returned;
 
+    // 📈 Profit speichern
+    user.profit += gain;
+
+    // 📄 Log
+    let logLine = `${new Date().toISOString()} | ${s} | LONG | ${gain}\n`;
+    fs.appendFileSync("trades.log", logLine);
+
+    // 🧹 Reset
+    user.portfolio[s] = 0;
+    coin.entry = null;
+    coin.entryTime = null;
+
+    // 📊 Stats
+    user.stats.trades++;
+    if(gain > 0) user.stats.wins++;
+
+    // UI Log
+    tradeLog.unshift("LONG " + gain.toFixed(2));
   }
+}
+   // SHORT EXIT
+if(user.shorts[s]){
 
+  let change = (coin.shortEntry - coin.price)/coin.shortEntry;
+  let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
+
+  if(
+    change > 0.0012 ||
+    change > 0.003 ||
+    change < -0.002 ||
+    duration > 60000
+  ){
+
+    let invested = coin.shortEntry * user.shorts[s];
+    let returned = coin.price * user.shorts[s];
+    let fee = returned * FEE;
+
+    user.fees += fee;
+    let gain = (invested - returned) - fee;
+
+    user.balance += invested;
+    user.profit += gain;
+
+    let logLine = `${new Date().toISOString()} | ${s} | SHORT | ${gain}\n`;
+    fs.appendFileSync("trades.log", logLine);
+
+    user.shorts[s] = 0;
+    coin.shortEntry = null;
+    coin.entryTime = null; // 🔥 WICHTIG
+
+    user.stats.trades++;
+    if(gain > 0) user.stats.wins++;
+
+    tradeLog.unshift("SHORT " + gain.toFixed(2));
+  }
+}
 },400);
 
 // ================= API =================
