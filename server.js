@@ -322,7 +322,28 @@ for(let s of symbols){
 
   let trendMove = (h[h.length-1] - h[h.length-10]) / h[h.length-10];
   let market = getMarketState(coin.history);
+// ================= FILTER =================
 
+let last = h[h.length-1];
+let prev = h[h.length-2];
+
+// ❌ kein Trading im Seitwärtsmarkt
+if(market === "SIDE") continue;
+
+// ❌ Bewegung zu klein → Fees fressen Profit
+if(Math.abs(trendMove) < 0.0015) continue;
+
+// ❌ LONG nur wenn Trend UP + kleiner Rücksetzer
+if(decision === "buy"){
+  if(market !== "UP") continue;
+  if(last > prev) continue; // kein Einstieg wenn Preis steigt
+}
+
+// ❌ SHORT nur wenn Trend DOWN + kleiner Rücksetzer
+if(decision === "short"){
+  if(market !== "DOWN") continue;
+  if(last < prev) continue; // kein Einstieg wenn Preis fällt
+}
   console.log(s, decision);
  
   // BUY
