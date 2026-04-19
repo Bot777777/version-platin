@@ -326,23 +326,23 @@ for(let s of symbols){
 
 // ================= FILTER (LOCKER) =================
 
-let last = h[h.length-1];
-let prev = h[h.length-2];
+//let last = h[h.length-1];
+//let prev = h[h.length-2];
 
 // ❌ nur extreme Seitwärtsphasen skippen
-if(market === "SIDE" && Math.abs(trendMove) < 0.0005) continue;
+//if(market === "SIDE" && Math.abs(trendMove) < 0.0005) continue;
 
 // ❌ Bewegung minimal erhöhen
-if(Math.abs(trendMove) < 0.0008) continue;
+//if(Math.abs(trendMove) < 0.0008) continue;
 
 // ❌ LONG nur leichter Rücksetzer
-if(decision === "buy"){
-  if(last > prev * 1.001) continue;
+//if(decision === "buy"){
+//  if(last > prev * 1.001) continue;
 }
 
 // ❌ SHORT nur leichter Rücksetzer
-if(decision === "short"){
-  if(last < prev * 0.999) continue;
+//if(decision === "short"){
+ // if(last < prev * 0.999) continue;
 } 
   // BUY
 if(decision==="buy" && !user.portfolio[s] && !user.shorts[s]){
