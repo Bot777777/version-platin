@@ -339,6 +339,7 @@ if(user.shorts[s]){
     tradeLog.unshift("SHORT " + gain.toFixed(2));
   }
 }
+  }
 },400);
 
 // ================= API =================
