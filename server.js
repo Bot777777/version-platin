@@ -254,7 +254,7 @@ if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
 
   user.shorts[s] = amount;
   coin.shortEntry = coin.price;
-
+coin.entryTime = Date.now();
   user.lastTrade[s] = now;
   tradeLog.unshift("SHORT "+s);
    user.globalLastTrade = now;
@@ -301,9 +301,15 @@ if(user.portfolio[s]){
    if(user.shorts[s]){
      let change = (coin.shortEntry - coin.price)/coin.shortEntry;
 
-     if(change > 0.003 || change < -0.002){
+     let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
-       let invested = coin.shortEntry * user.shorts[s];
+if(
+  change > 0.0012 ||
+  change > 0.003 ||
+  change < -0.002 ||
+  duration > 60000
+){
+  let invested = coin.shortEntry * user.shorts[s];
        let returned = coin.price * user.shorts[s];
       let fee = returned * FEE;
        user.fees += fee; // ✅ NEU
@@ -314,7 +320,7 @@ let logLine = `${new Date().toISOString()} | ${s} | SHORT | ${gain}\n`;
 fs.appendFileSync("trades.log", logLine);
        user.shorts[s] = 0;
        coin.shortEntry = null;
-
+coin.entryTime = null:
        user.stats.trades++;
        if(gain > 0) user.stats.wins++;
 
