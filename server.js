@@ -291,6 +291,7 @@ if(user.shorts[s]){
   if(gain > 0) user.stats.wins++;
 
   continue;
+   }
 }  // ================= LIMIT NACH EXIT =================
   let openTrades =
     Object.values(user.portfolio).filter(v => v > 0).length +
