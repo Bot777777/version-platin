@@ -236,10 +236,7 @@ if(user.portfolio[s]){
   let change = (coin.price - coin.entry)/coin.entry;
   let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
- if(user.portfolio[s]){
 
-  let change = (coin.price - coin.entry) / coin.entry;
-  let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
   if(
     change > 0.003 ||      // Take Profit (+0.3%)
