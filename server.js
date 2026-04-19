@@ -358,15 +358,17 @@ res.send(`
 <h1 style="text-align:center;font-size:42px">🚀 PRO TERMINAL</h1>
 
 <div style="text-align:center;font-size:22px">
-Balance: $<span id="balance"></span> |
-profit: $<span id="profit",</span> |
-Fees: $<span id="fees"></span> |
-Net: $<span id="net"></ span><br>
-Profit/Trade: $<span id="ppt"></span>l
+
 <span id="status"></span><br><br>
 
 <button onclick="start()" style="font-size:18px;padding:10px;margin:5px">▶ START</button>
-<button onclick="stop()" style="font-size:18px;padding:10px;margin:5px">⏹ STOP</button>
+<button onclick="stop()" style="font-sizeBalance: $<span id="balance"></span> ||
+Balance: $<span id="balance"></span> ||
+Profit: $<span id="profit"></ span>
+Fees: $<span id="fees"></span> |
+Net: $<span id="net"></ span><br>
+Profit/Trade: $<span id="ppt"></span>|
+18px;padding:10px;margin:5px">⏹ STOP</button>
 </div>
 
 <div style="text-align:center;margin:20px;font-size:18px">
