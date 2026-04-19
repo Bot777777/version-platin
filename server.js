@@ -338,12 +338,12 @@ for(let s of symbols){
 // ❌ LONG nur leichter Rücksetzer
 //if(decision === "buy"){
 //  if(last > prev * 1.001) continue;
-}
+
 
 // ❌ SHORT nur leichter Rücksetzer
 //if(decision === "short"){
  // if(last < prev * 0.999) continue;
-} 
+
   // BUY
 if(decision==="buy" && !user.portfolio[s] && !user.shorts[s]){
   let amount = TRADE_SIZE / coin.price;
