@@ -24,6 +24,7 @@ let user = {
   
   balance: 500,
   profit: 0,
+  fees: 0,
   portfolio: {},
   shorts: {},
   stats: {
@@ -267,9 +268,10 @@ if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
        let invested = coin.entry * user.portfolio[s];
        let returned = coin.price * user.portfolio[s];
        let fee = returned * FEE;
+     user.fees += fee; 
        let gain = (returned - invested) - fee;
        
-      // user.balance += invested;
+      // user.balance += invested; 
        user.profit += gain;
 let logLine = `${new Date().toISOString()} | ${s} | LONG | ${gain}\n`;
 fs.appendFileSync("trades.log", logLine);
@@ -291,9 +293,9 @@ fs.appendFileSync("trades.log", logLine);
 
        let invested = coin.shortEntry * user.shorts[s];
        let returned = coin.price * user.shorts[s];
-       let fee = returned * FEE;
-       let gain = (invested - returned) - fee;
-       
+      let fee = returned * FEE;
+       user.fees += fee; // ✅ NEU
+       let gain = (invested - returned) - fee;       
        //user.balance += invested; // ✅ FIX (korrekt statt returned)
        user.profit += gain;
 let logLine = `${new Date().toISOString()} | ${s} | SHORT | ${gain}\n`;
@@ -357,7 +359,7 @@ res.send(`
 
 <div style="text-align:center;font-size:22px">
 Balance: $<span id="balance"></span> |
-profit: B<span id="profit",</span> |
+profit: $<span id="profit",</span> |
 Fees: $<span id="fees"></span> |
 Net: $<span id="net"></ span><br>
 Profit/Trade: $<span id="ppt"></span>l
@@ -431,9 +433,9 @@ async function load(){
 
   balance.innerText=d.user.balance.toFixed(2);
   profit.innerText=d.user.profit.toFixed(2);
-fees.innerText = d.user.fees.toFixed(2);
-net.innerText = d.netProfit.toFixed(2);
-ppt.innerText = d.profitPerTrade.toFixed(4);
+fees.innerText = (d.user.fees || 0).toFixed(2);
+net.innerText = (d.netProfit || 0).toFixed(2);
+ppt.innerText = (d.profitPerTrade || 0).toFixed(4);
 let statusEl = document.getElementById("status");
 
   if(statusEl){
