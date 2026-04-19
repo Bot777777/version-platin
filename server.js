@@ -201,41 +201,106 @@ setInterval(()=>{
 
   if(!botRunning) return;
 
-  for(let s of symbols){
-    let openTrades =
-  Object.values(user.portfolio).filter(v => v > 0).length +
-  Object.values(user.shorts).filter(v => v > 0).length;
+for(let s of symbols){
 
-if(openTrades >= user.maxOpenTrades) continue;
-    let now = Date.now();
-if(!user.globalLastTrade) user.globalLastTrade = 0;
+  let coin = coins[s];
+  if(coin.price === 0) continue;
 
-if(now - user.globalLastTrade < 5000){
-  continue;
-}
-    if(!user.lastTrade) user.lastTrade = {};
-if(user.lastTrade[s] && now - user.lastTrade[s] < 30000){
-  continue;
-}
-    let coin = coins[s];
-    if(coin.price === 0) continue;
+  // ================= EXIT IMMER ZUERST =================
+  if(user.portfolio[s]){
+    let change = (coin.price - coin.entry)/coin.entry;
+    let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
-   let decision = aiDecision(coin.history);
-    console.log(s, decision);
-    let h = coin.history;
-    if(h.length < 10) continue;
-    let trendMove = (h[h.length-1] - h[h.length-10]) / h[h.length-10];
-   let market = getMarketState(coin.history);
+    if(
+      change > 0.0012 ||
+      change > 0.003 ||
+      change < -0.002 ||
+      duration > 60000
+    ){
+      let invested = coin.entry * user.portfolio[s];
+      let returned = coin.price * user.portfolio[s];
+      let fee = returned * FEE;
 
-// ❌ kein Trading im Seitwärtsmarkt
-// nur extreme Seitwärtsphasen skippen
-// if(market === "SIDE" && Math.abs(coin.history.at(-1) - coin.history.at(-5)) / coin.history.at(-5) < 0.0001) continue;
+      user.fees += fee;
+      let gain = (returned - invested) - fee;
 
-// nur harte Gegentrades blockieren
-// if(market === "UP" && decision === "short" && Math.abs(trendMove) > 0.001) continue;
-// if(market === "DOWN" && decision === "buy" && Math.abs(trendMove) > 0.001) continue; 
+      user.balance += returned;
+      user.profit += gain;
 
-    // BUY
+      let logLine = `${new Date().toISOString()} | ${s} | LONG | ${gain}\n`;
+      fs.appendFileSync("trades.log", logLine);
+
+      user.portfolio[s] = 0;
+      coin.entry = null;
+      coin.entryTime = null;
+
+      user.stats.trades++;
+      if(gain > 0) user.stats.wins++;
+
+      tradeLog.unshift("LONG " + gain.toFixed(2));
+    }
+  }
+
+  if(user.shorts[s]){
+    let change = (coin.shortEntry - coin.price)/coin.shortEntry;
+    let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
+
+    if(
+      change > 0.0012 ||
+      change > 0.003 ||
+      change < -0.002 ||
+      duration > 60000
+    ){
+      let invested = coin.shortEntry * user.shorts[s];
+      let returned = coin.price * user.shorts[s];
+      let fee = returned * FEE;
+
+      user.fees += fee;
+      let gain = (invested - returned) - fee;
+
+      user.balance += invested;
+      user.profit += gain;
+
+      let logLine = `${new Date().toISOString()} | ${s} | SHORT | ${gain}\n`;
+      fs.appendFileSync("trades.log", logLine);
+
+      user.shorts[s] = 0;
+      coin.shortEntry = null;
+      coin.entryTime = null;
+
+      user.stats.trades++;
+      if(gain > 0) user.stats.wins++;
+
+      tradeLog.unshift("SHORT " + gain.toFixed(2));
+    }
+  }
+
+  // ================= LIMIT NACH EXIT =================
+  let openTrades =
+    Object.values(user.portfolio).filter(v => v > 0).length +
+    Object.values(user.shorts).filter(v => v > 0).length;
+
+  if(openTrades >= user.maxOpenTrades) continue;
+
+  // ================= COOLDOWN =================
+  let now = Date.now();
+
+  if(!user.lastTrade) user.lastTrade = {};
+  if(user.lastTrade[s] && now - user.lastTrade[s] < 30000){
+    continue;
+  }
+
+  // ================= AI =================
+  let decision = aiDecision(coin.history);
+  let h = coin.history;
+  if(h.length < 10) continue;
+
+  let trendMove = (h[h.length-1] - h[h.length-10]) / h[h.length-10];
+  let market = getMarketState(coin.history);
+
+  console.log(s, decision);
+  
+  // BUY
 if(decision==="buy" && !user.portfolio[s] && !user.shorts[s]){
   let amount = TRADE_SIZE / coin.price;
   user.balance -= TRADE_SIZE;
