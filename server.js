@@ -31,7 +31,7 @@ let user = {
     trades: 0,
     wins: 0
   },
-  maxOpenTrades: 5,
+  maxOpenTrades: 2,
   loggedIn: false // ✅ FIX (Komma)
 };
 
@@ -145,27 +145,21 @@ async function fetchCandles(symbol){
 
 // ================= AI =================
 function aiDecision(h){
+  
+  if(h.length < 50) return "hold";
 
-  if(h.length < 10) return "hold";
+  let ema20 = getEMA(h.slice(-20), 20);
+  let ema50 = getEMA(h.slice(-50), 50);
 
- let a = h[h.length-1];
-let b = h[h.length-2];
-let c = h[h.length-5]; // ✅ HIER hinzufügen
+  let price = h[h.length - 1];
 
-let volatility = Math.abs(a - c) / c;
-
-if(volatility < 0.0002) return "hold";
-  let shortMove = (a - b)/b;
-
-  // 🔥 DIREKTES SCALPING
-
-  if(shortMove < -0.00003){
+  // TREND FOLLOWING
+  if(ema20 > ema50 && price > ema20){
     return "buy";
   }
 
-  if(shortMove > 0.00003){
+  if(ema20 < ema50 && price < ema20){
     return "short";
-    
   }
 
   return "hold";
@@ -198,7 +192,7 @@ function getMarketState(h){
 
 // ================= BOT =================
 const TRADE_SIZE = 20;
-const FEE = 0.001; 
+const FEE = 0.002; 
 
 startWebSocket();
 
@@ -216,7 +210,7 @@ if(openTrades >= user.maxOpenTrades) continue;
     let now = Date.now();
 
 if(!user.lastTrade) user.lastTrade = {};
-if(user.lastTrade[s] && now - user.lastTrade[s] < 5000){
+if(user.lastTrade[s] && now - user.lastTrade[s] < 30000){
   continue;
 }
     let coin = coins[s];
@@ -263,7 +257,7 @@ if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
    if(user.portfolio[s]){
      let change = (coin.price - coin.entry)/coin.entry;
 
-     if(change > 0.0015 || change < -0.0007){
+     if(change > 0.003 || change < -0.002){
 
        let invested = coin.entry * user.portfolio[s];
        let returned = coin.price * user.portfolio[s];
@@ -289,7 +283,7 @@ fs.appendFileSync("trades.log", logLine);
    if(user.shorts[s]){
      let change = (coin.shortEntry - coin.price)/coin.shortEntry;
 
-     if(change > 0.0015 || change < -0.0001){
+     if(change > 0.003 || change < -0.002){
 
        let invested = coin.shortEntry * user.shorts[s];
        let returned = coin.price * user.shorts[s];
