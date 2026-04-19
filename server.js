@@ -1,4 +1,4 @@
-const express = require("express");
+ƒconst express = require("express");
 const cors = require("cors");
 const axios = require("axios");
 const WebSocket = require("ws");
@@ -320,7 +320,7 @@ let logLine = `${new Date().toISOString()} | ${s} | SHORT | ${gain}\n`;
 fs.appendFileSync("trades.log", logLine);
        user.shorts[s] = 0;
        coin.shortEntry = null;
-coin.entryTime = null:
+coin.entryTime = null;
        user.stats.trades++;
        if(gain > 0) user.stats.wins++;
 
