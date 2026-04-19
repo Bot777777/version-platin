@@ -314,7 +314,20 @@ fs.appendFileSync("trades.log", logLine);
 
 // ================= API =================
 app.get("/data",(req,res)=>{
-  res.json({user,coins,botRunning,tradeLog});
+  let netProfit = user.profit - user.fees;
+
+  let profitPerTrade = user.stats.trades
+    ? netProfit / user.stats.trades
+    : 0;
+
+  res.json({
+    user,
+    coins,
+    botRunning,
+    tradeLog,
+    netProfit,
+    profitPerTrade
+  });
 });
 app.get("/ip", (req,res)=>{
   res.send(req.ip);
@@ -344,8 +357,10 @@ res.send(`
 
 <div style="text-align:center;font-size:22px">
 Balance: $<span id="balance"></span> |
-Profit: $<span id="profit"></span><br>
-
+profit: B<span id="profit",</span> |
+Fees: $<span id="fees"></span> |
+Net: $<span id="net"></ span><br>
+Profit/Trade: $<span id="ppt"></span>l
 <span id="status"></span><br><br>
 
 <button onclick="start()" style="font-size:18px;padding:10px;margin:5px">▶ START</button>
@@ -416,8 +431,10 @@ async function load(){
 
   balance.innerText=d.user.balance.toFixed(2);
   profit.innerText=d.user.profit.toFixed(2);
-
-  let statusEl = document.getElementById("status");
+fees.innerText = d.user.fees.toFixed(2);
+net.innerText = d.netProfit.toFixed(2);
+ppt.innerText = d.profitPerTrade.toFixed(4);
+let statusEl = document.getElementById("status");
 
   if(statusEl){
     if(d.botRunning){
