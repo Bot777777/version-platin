@@ -19,22 +19,20 @@ app.use(cors());
 app.use(express.json());
 
 // ================= USER =================
-lastTrade: []
 let user = {
-
   balance: 500,
   profit: 0,
   fees: 0,
   portfolio: {},
   shorts: {},
+  lastTrade: {},  
   stats: {
     trades: 0,
     wins: 0
   },
   maxOpenTrades: 3,
-  loggedIn: false // ✅ FIX (Komma)
+  loggedIn: false
 };
-
 let botRunning = true;
 
 // ================= COINS =================
@@ -486,17 +484,19 @@ let statusEl = document.getElementById("status");
     }
   }
   portfolio.innerHTML=pf||"leer";
-  let pos="";
-  for(let c in d.coins){
-    if(d.coins[c].entry){
-      pos+=c+" LONG<br>";
-    }
-    if(d.coins[c].shortEntry){
-      pos+=c+" SHORT<br>";
-    }
+let pos="";
+for(let c in d.user.portfolio){
+  if(d.user.portfolio[c] > 0){
+    pos += c + " LONG<br>";
   }
-  positions.innerHTML=pos||"keine";
-  let html="";
+}
+for(let c in d.user.shorts){
+  if(d.user.shorts[c] > 0){
+    pos += c + " SHORT<br>";
+  }
+}
+positions.innerHTML = pos || "keine";
+let html="";
   for(let c in d.coins){
     html+=\`
     <div onclick="selectCoin('\${c}')"
