@@ -206,7 +206,7 @@ setInterval(()=>{
   Object.values(user.portfolio).filter(v => v > 0).length +
   Object.values(user.shorts).filter(v => v > 0).length;
 
-if(openTrades >= user.maxOpenTrades) break;
+if(openTrades >= user.maxOpenTrades) continue;
     let now = Date.now();
 if(!user.globalLastTrade) user.globalLastTrade = 0;
 
