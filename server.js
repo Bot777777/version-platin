@@ -350,6 +350,8 @@ app.post("/bot/stop",(req,res)=>{
 });
 
 // ================= UI =================
+app.get("/", (req, res) => {
+res.send(`
 <html>
 <body style="background:#0b0f14;color:white;font-family:Arial">
 
@@ -365,10 +367,12 @@ Profit/Trade: $<span id="ppt"></span><br><br>
 
 <span id="status"></span><br><br>
 
-<button onclick="start()" style="font-size:18px;padding:10px;margin:5px">▶ START</button>
-<button onclick="stop()" style="font-size:18px;padding:10px;margin:5px">⏹ STOP</button>
+<button onclick="start()" style="font-size:18px;padding:10px;margin:5px">START</button>
+<button onclick="stop()" style="font-size:18px;padding:10px;margin:5px">STOP</button>
 
 </div>
+`);
+});
 <div style="text-align:center;margin:20px;font-size:18px">
 <h2>📊 Stats</h2>
 <div id="stats"></div>
