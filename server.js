@@ -31,7 +31,7 @@ let user = {
     trades: 0,
     wins: 0
   },
-  maxOpenTrades: 2,
+  maxOpenTrades: 3,
   loggedIn: false // ✅ FIX (Komma)
 };
 
@@ -238,7 +238,7 @@ if(decision==="buy" && !user.portfolio[s] && !user.shorts[s]){
  
   user.portfolio[s] = amount; // ✅ WICHTIG
   coin.entry = coin.price;
-
+coin.entryTime = Date.now();
   user.lastTrade[s] = now;
   tradeLog.unshift("BUY "+s);
 }
@@ -255,10 +255,18 @@ if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
 }
    // LONG EXIT
    if(user.portfolio[s]){
-     let change = (coin.price - coin.entry)/coin.entry;
+     let duration = Date.now() - coin.entryTime;
 
+// 🔥 nach 60 Sekunden raus egal was
+if(duration > 60000){
+  
+  let change = (coin.price - coin.entry)/coin.entry;
+if/change > 0.0012){
+     closeTrade;
+    }
      if(change > 0.003 || change < -0.002){
-
+closeTrade;
+  }     
        let invested = coin.entry * user.portfolio[s];
        let returned = coin.price * user.portfolio[s];
        let fee = returned * FEE;
