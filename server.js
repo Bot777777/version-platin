@@ -324,12 +324,7 @@ for(let s of symbols){
   let market = getMarketState(coin.history);
 
   console.log(s, decision);
-  let last = h[h.length-1];
-let prev = h[h.length-2];
-
-// nur kaufen wenn Preis gerade zurückkommt
-if(decision === "buy" && last > prev) continue;
-if(decision === "short" && last < prev) continue;
+ 
   // BUY
 if(decision==="buy" && !user.portfolio[s] && !user.shorts[s]){
   let amount = TRADE_SIZE / coin.price;
