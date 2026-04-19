@@ -338,16 +338,16 @@ let prev = h[h.length-2];
 if(market === "SIDE" && Math.abs(trendMove) < 0.0005) continue;
 
 // ❌ Bewegung minimal erhöhen
-if(Math.abs(trendMove) < 0.0008) continue;
+//if(Math.abs(trendMove) < 0.0008) continue;
 
 // ❌ LONG nur leichter Rücksetzer
 if(decision === "buy"){
-  if(last > prev * 1.001) continue;
+ // if(last > prev * 1.001) continue;
 }
 
 // ❌ SHORT nur leichter Rücksetzer
 if(decision === "short"){
- if(last < prev * 0.999) continue;
+// if(last < prev * 0.999) continue;
 }
   // BUY
 if(decision==="buy" && !user.portfolio[s] && !user.shorts[s]){
