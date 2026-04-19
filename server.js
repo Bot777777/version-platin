@@ -220,12 +220,18 @@ setInterval(()=>{
 
     // SHORT EXIT (FIXED)
     if(user.shorts[s]){
+
       let trade = user.shorts[s];
 
       let change = (trade.entry - coin.price) / trade.entry;
       let duration = Date.now() - trade.entryTime;
 
-      if(change > 0.0012 || change < -0.002 || duration > 60000){
+      if(
+        change > 0.0012 ||
+        change > 0.003 ||
+        change < -0.002 ||
+        duration > 60000
+      ){
 
         let invested = trade.entry * trade.amount;
         let returned = coin.price * trade.amount;
@@ -237,7 +243,7 @@ setInterval(()=>{
         user.balance += invested;
         user.profit += gain;
 
-        let logLine = `${new Date().toISOString()} | ${s} | SHORT | ${gain}\n`;
+        let logLine = \`\${new Date().toISOString()} | \${s} | SHORT | \${gain}\\n\`;
         fs.appendFileSync("trades.log", logLine);
 
         user.shorts[s] = null;
@@ -279,18 +285,45 @@ app.get("/candles/:symbol", async (req,res)=>{
 // ================= UI =================
 app.get("/", (req, res) => {
 res.send(`
+<html>
+<body style="background:#0b0f14;color:white;font-family:Arial">
 
-<!-- UI bleibt gleich, nur Portfolio FIX -->
+<h1 style="text-align:center;font-size:42px">🚀 PRO TERMINAL</h1>
+
+<div style="text-align:center;font-size:22px">
+
+Balance: $<span id="balance"></span> |
+Profit: $<span id="profit"></span> |
+Fees: $<span id="fees"></span> |
+Net: $<span id="net"></span><br>
+Profit/Trade: $<span id="ppt"></span><br><br>
+
+<span id="status"></span><br><br>
+
+<button onclick="start()">START</button>
+<button onclick="stop()">STOP</button>
+
+</div>
+
+<div id="portfolio"></div>
 
 <script>
-let pf="";
-for(let c in d.user.portfolio){
-  if(d.user.portfolio[c]){
-    pf+=c+": "+d.user.portfolio[c].amount.toFixed(4)+"<br>";
+async function load(){
+  let d=await (await fetch('/data')).json();
+
+  let pf="";
+  for(let c in d.user.portfolio){
+    if(d.user.portfolio[c]){
+      pf+=c+": "+d.user.portfolio[c].amount.toFixed(4)+"<br>";
+    }
   }
+  portfolio.innerHTML=pf||"leer";
 }
+setInterval(load,1000);
 </script>
 
+</body>
+</html>
 `);
 });
 
