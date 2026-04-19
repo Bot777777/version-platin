@@ -371,8 +371,7 @@ Profit/Trade: $<span id="ppt"></span><br><br>
 <button onclick="stop()" style="font-size:18px;padding:10px;margin:5px">STOP</button>
 
 </div>
-`);
-});
+
 <div style="text-align:center;margin:20px;font-size:18px">
 <h2>📊 Stats</h2>
 <div id="stats"></div>
