@@ -271,7 +271,7 @@ for(let s of symbols){
     let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
     if(
-      ||
+     
       change > 0.003 ||
       change < -0.002 ||
       duration > 60000
