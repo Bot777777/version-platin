@@ -236,9 +236,11 @@ if(decision==="buy" && !user.portfolio[s] && !user.shorts[s]){
   let amount = TRADE_SIZE / coin.price;
   user.balance -= TRADE_SIZE;
  
-  user.portfolio[s] = amount; // ✅ WICHTIG
-  coin.entry = coin.price;
-coin.entryTime = Date.now();
+user.portfolio[s] = {
+  amount: amount,
+  entry: coin.price,
+  entryTime: Date.now()
+};
   user.lastTrade[s] = now;
   tradeLog.unshift("BUY "+s);
 }
@@ -247,21 +249,23 @@ if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
   let amount = TRADE_SIZE / coin.price;
   user.balance -= TRADE_SIZE;
   
-  user.shorts[s] = amount;
-  coin.shortEntry = coin.price;
-  coin.entryTime = Date.now();
+user.shorts[s] = {
+  amount: amount,
+  entry: coin.price,
+  entryTime: Date.now()
+};
   user.lastTrade[s] = now;
   tradeLog.unshift("SHORT "+s);
 }
 // ================= LONG EXIT =================
 if(user.portfolio[s]){
+let trade = user.portfolio[s];
 
-  // Preisveränderung berechnen
-  let change = (coin.price - coin.entry) / coin.entry;
+let change = (coin.price - trade.entry) / trade.entry;
+let duration = Date.now() - trade.entryTime;
 
-  // Zeit seit Einstieg
-  let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
-
+let invested = trade.entry * trade.amount;
+let returned = coin.price * trade.amount;
   // 🔥 EXIT BEDINGUNGEN
   if(
     change > 0.0012 ||      // kleiner Gewinn
@@ -270,10 +274,9 @@ if(user.portfolio[s]){
     duration > 60000        // nach 60 Sekunden raus
   ){
 
-    let amount = user.portfolio[s];
 
-    let invested = coin.entry * amount;
-    let returned = coin.price * amount;
+
+
 
     let fee = returned * FEE;
     user.fees += fee;
@@ -291,9 +294,8 @@ if(user.portfolio[s]){
     fs.appendFileSync("trades.log", logLine);
 
     // 🧹 Reset
-    user.portfolio[s] = 0;
-    coin.entry = null;
-    coin.entryTime = null;
+    user.portfolio[s] = null;
+ 
 
     // 📊 Stats
     user.stats.trades++;
@@ -306,8 +308,6 @@ if(user.portfolio[s]){
    // SHORT EXIT
 if(user.shorts[s]){
 
-  let change = (coin.shortEntry - coin.price)/coin.shortEntry;
-  let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
   if(
     change > 0.0012 ||
@@ -316,8 +316,13 @@ if(user.shorts[s]){
     duration > 60000
   ){
 
-    let invested = coin.shortEntry * user.shorts[s];
-    let returned = coin.price * user.shorts[s];
+   let trade = user.shorts[s];
+
+let change = (trade.entry - coin.price) / trade.entry;
+let duration = Date.now() - trade.entryTime;
+
+let invested = trade.entry * trade.amount;
+let returned = coin.price * trade.amount;
     let fee = returned * FEE;
 
     user.fees += fee;
@@ -329,9 +334,8 @@ if(user.shorts[s]){
     let logLine = `${new Date().toISOString()} | ${s} | SHORT | ${gain}\n`;
     fs.appendFileSync("trades.log", logLine);
 
-    user.shorts[s] = 0;
-    coin.shortEntry = null;
-    coin.entryTime = null; // 🔥 WICHTIG
+    user.shorts[s] = null;
+
 
     user.stats.trades++;
     if(gain > 0) user.stats.wins++;
@@ -487,22 +491,24 @@ let statusEl = document.getElementById("status");
 
   let pf="";
   for(let c in d.user.portfolio){
-    if(d.user.portfolio[c]>0){
+    if(d.user.portfolio[c])
       pf+=c+": "+d.user.portfolio[c]+"<br>";
     }
   }
   portfolio.innerHTML=pf||"leer";
 
-  let pos="";
-  for(let c in d.coins){
-    if(d.coins[c].entry){
-      pos+=c+" LONG<br>";
-    }
-    if(d.coins[c].shortEntry){
-      pos+=c+" SHORT<br>";
-    }
+let pos="";
+for(let c in d.user.portfolio){
+  if(d.user.portfolio[c]){
+    pos+=c+" LONG<br>";
   }
-  positions.innerHTML=pos||"keine";
+}
+for(let c in d.user.shorts){
+  if(d.user.shorts[c]){
+    pos+=c+" SHORT<br>";
+  }
+}
+positions.innerHTML=pos||"keine";
 
   let html="";
   for(let c in d.coins){
