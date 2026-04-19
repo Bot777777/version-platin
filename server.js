@@ -359,7 +359,7 @@ if(user.portfolio[s]){
   if(
     change > 0.0012 ||   // kleiner Gewinn
     change > 0.003 ||    // großer Gewinn
-    change < -0.002 ||   // Stop Loss
+    change < -0.005 ||   // Stop Loss
     duration > 60000     // Zeitlimit
   ){
 
@@ -396,7 +396,7 @@ if(user.portfolio[s]){
 if(
   change > 0.0012 ||
   change > 0.003 ||
-  change < -0.002 ||
+  change < -0.005 ||
   duration > 60000
 ){
   let invested = coin.shortEntry * user.shorts[s];
