@@ -322,6 +322,7 @@ if(user.portfolio[s]){
 
   // ================= AI =================
   let decision = aiDecision(coin.history);
+  console.log(s, decision);
   let h = coin.history;
   if(h.length < 10) continue;
 
