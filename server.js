@@ -333,10 +333,10 @@ let last = h[h.length-1];
 let prev = h[h.length-2];
 
 // ❌ nur extreme Seitwärtsphasen skippen
-if(market === "SIDE" && Math.abs(trendMove) < 0.0005) continue;
+if(market === "SIDE" && Math.abs(trendMove) < 0.001) continue;
 
 // ❌ Bewegung minimal erhöhen
-if(Math.abs(trendMove) < 0.0005) continue;
+if(Math.abs(trendMove) < 0.0002) continue;
 
 // ❌ LONG nur leichter Rücksetzer
 if(decision === "buy"){
