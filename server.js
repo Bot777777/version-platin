@@ -30,7 +30,7 @@ let user = {
     trades: 0,
     wins: 0
   },
-  maxOpenTrades: 3,
+  maxOpenTrades: 2,
   loggedIn: false
 };
 let botRunning = true;
@@ -171,7 +171,7 @@ function aiDecision(h){
   if(
     ema20 > ema50 &&        // Trend up
     price < ema20 &&        // über EMA
-    rsi < 40                // Rücksetzer!
+    rsi < 45                // Rücksetzer!
   ){
     return "buy";
   }
@@ -182,7 +182,7 @@ function aiDecision(h){
     price > ema20 &&        // unter EMA
     rsi > 60                // Rücksetzer!
   ){
-    return "short";
+  //  return "short";
   }
 
   return "hold";
@@ -272,12 +272,11 @@ if(user.portfolio[s]){
 
   let change = (coin.shortEntry - coin.price) / coin.shortEntry;
   let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
-
-  if(
-    change > 0.005 ||      // Gewinn (+0.3%)
-    change < -0.005 ||     // Stop Loss (-0.2%)
-    duration > 120000       // Max 60 Sekunden
-  ){
+if(
+  change > 0.006 ||      // Gewinn (0.6%)
+  (duration > 300000 && change > -0.002) ||  // nach Zeit nur raus wenn nicht schlimm im Minus
+  change < -0.006        // harter Stop Loss
+){
 
     let invested = coin.shortEntry * user.shorts[s];
     let returned = coin.price * user.shorts[s];
@@ -333,10 +332,10 @@ let last = h[h.length-1];
 let prev = h[h.length-2];
 
 // ❌ nur extreme Seitwärtsphasen skippen
-if(market === "SIDE" && Math.abs(trendMove) < 0.0005) continue;
-
+if(market === "SIDE") continue;
+  
 // ❌ Bewegung minimal erhöhen
-//if(Math.abs(trendMove) < 0.0008) continue;
+if(Math.abs(trendMove) < 0.0025) continue;
 
 // ❌ LONG nur leichter Rücksetzer
 if(decision === "buy"){
