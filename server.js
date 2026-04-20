@@ -171,7 +171,7 @@ function aiDecision(h){
   if(
     ema20 > ema50 &&        // Trend up
     price < ema20 &&        // über EMA
-    rsi < 38                // Rücksetzer!
+    rsi <40               // Rücksetzer!
   ){
     return "buy";
   }
@@ -180,7 +180,7 @@ function aiDecision(h){
   if(
     ema20 < ema50 &&        // Trend down
     price > ema20 &&        // unter EMA
-    rsi > 44                // Rücksetzer!
+    rsi >60                // Rücksetzer!
   ){
     return "short";
   }
@@ -336,7 +336,7 @@ let prev = h[h.length-2];
 if(market === "SIDE" && Math.abs(trendMove) < 0.001) continue;
 
 // ❌ Bewegung minimal erhöhen
-if(Math.abs(trendMove) < 0.0002) continue;
+//if(Math.abs(trendMove) < 0.0005) continue;
 
 // ❌ LONG nur leichter Rücksetzer
 if(decision === "buy"){
