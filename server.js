@@ -171,7 +171,7 @@ function aiDecision(h){
   if(
     ema20 > ema50 &&        // Trend up
     price < ema20 &&        // über EMA
-    rsi < 45                // Rücksetzer!
+    rsi < 35                // Rücksetzer!
   ){
     return "buy";
   }
@@ -180,7 +180,7 @@ function aiDecision(h){
   if(
     ema20 < ema50 &&        // Trend down
     price > ema20 &&        // unter EMA
-    rsi > 55                // Rücksetzer!
+    rsi > 65                // Rücksetzer!
   ){
     return "short";
   }
