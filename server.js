@@ -239,7 +239,7 @@ if(user.portfolio[s]){
 
 
   if(
-    change > 0.005 ||      // Take Profit (+0.3%)
+    change > 0.007 ||      // Take Profit (+0.3%)
     change < -0.005 ||     // Stop Loss (-0.2%)
     duration > 120000       // Max 60 Sekunden
   ){
