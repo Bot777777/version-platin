@@ -30,7 +30,7 @@ let user = {
     trades: 0,
     wins: 0
   },
-  maxOpenTrades: 4,
+  maxOpenTrades: 3,
   loggedIn: false
 };
 let botRunning = true;
@@ -169,9 +169,9 @@ function aiDecision(h){
 
   // 🔥 LONG
   if(
-    ema20 > ema50 &&           // Trend up
-    price < ema20 &&           // über EMA
-(rsi < 40 || s === "BTCUSDT")  // Rücksetzer!
+    ema20 > ema50 &&        // Trend up
+    price < ema20 &&        // über EMA
+    rsi < 40                // Rücksetzer!
   ){
     return "buy";
   }
@@ -180,7 +180,7 @@ function aiDecision(h){
   if(
     ema20 < ema50 &&        // Trend down
     price > ema20 &&        // unter EMA
-    rsi >60                // Rücksetzer!
+    rsi > 60                // Rücksetzer!
   ){
     return "short";
   }
@@ -214,7 +214,7 @@ function getMarketState(h){
 }
 
 // ================= BOT =================
-const TRADE_SIZE = 125;
+const TRADE_SIZE = 50;
 const FEE = 0.001; 
 
 startWebSocket();
@@ -240,19 +240,19 @@ if(user.portfolio[s]){
 
   if(
     change > 0.005 ||      // Take Profit (+0.3%)
-    change < -0.003 ||     // Stop Loss (-0.2%)
+    change < -0.005 ||     // Stop Loss (-0.2%)
     duration > 120000       // Max 60 Sekunden
   ){
 
     let invested = coin.entry * user.portfolio[s];
     let returned = coin.price * user.portfolio[s];
     let fee = returned * FEE;
-    user.balance += returned - fee;
+
     user.fees += fee;
 
     let gain = (returned - invested) - fee;
 
-  
+    user.balance += returned;
     user.profit += gain;
 
     let logLine = `${new Date().toISOString()} | ${s} | LONG | ${gain}\n`;
@@ -274,20 +274,20 @@ if(user.portfolio[s]){
   let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
   if(
-    change > 0.008 ||      // Gewinn (+0.3%)
-    change < -0.004 ||     // Stop Loss (-0.2%)
+    change > 0.005 ||      // Gewinn (+0.3%)
+    change < -0.005 ||     // Stop Loss (-0.2%)
     duration > 120000       // Max 60 Sekunden
   ){
 
     let invested = coin.shortEntry * user.shorts[s];
     let returned = coin.price * user.shorts[s];
     let fee = returned * FEE;
-    user.balance += returned - fee;
+
     user.fees += fee;
 
     let gain = (invested - returned) - fee;
 
-    
+    user.balance += invested;
     user.profit += gain;
 
     let logLine = `${new Date().toISOString()} | ${s} | SHORT | ${gain}\n`;
@@ -333,10 +333,10 @@ let last = h[h.length-1];
 let prev = h[h.length-2];
 
 // ❌ nur extreme Seitwärtsphasen skippen
-if(market === "SIDE" && Math.abs(trendMove) < 0.005) continue;
+if(market === "SIDE" && Math.abs(trendMove) < 0.0005) continue;
 
 // ❌ Bewegung minimal erhöhen
-//if(Math.abs(trendMove) < 0.0005) continue;
+//if(Math.abs(trendMove) < 0.0008) continue;
 
 // ❌ LONG nur leichter Rücksetzer
 if(decision === "buy"){
@@ -351,24 +351,7 @@ if(decision === "short"){
 if(decision==="buy" && !user.portfolio[s] && !user.shorts[s]){
   let amount = TRADE_SIZE / coin.price;
   user.balance -= TRADE_SIZE;
-// 🔥 BTC TREND ENTRY
-if(
-  s === "BTCUSDT" &&
-  decision === "hold" &&
-  coin.history.length > 50
-){
-  let ema20 = getEMA(coin.history.slice(-20), 20);
-  let ema50 = getEMA(coin.history.slice(-50), 50);
-  let rsi = getRSI(coin.history);
 
-  if(
-    ema20 > ema50 &&
-    coin.price > ema20 &&
-    rsi > 50 && rsi < 70
-  ){
-    decision = "buy";
-  }
-}
   user.portfolio[s] = amount; // ✅ WICHTIG
   coin.entry = coin.price;
 coin.entryTime = Date.now();
