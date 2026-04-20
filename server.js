@@ -351,7 +351,24 @@ if(decision === "short"){
 if(decision==="buy" && !user.portfolio[s] && !user.shorts[s]){
   let amount = TRADE_SIZE / coin.price;
   user.balance -= TRADE_SIZE;
+// 🔥 BTC TREND ENTRY
+if(
+  s === "BTCUSDT" &&
+  decision === "hold" &&
+  coin.history.length > 50
+){
+  let ema20 = getEMA(coin.history.slice(-20), 20);
+  let ema50 = getEMA(coin.history.slice(-50), 50);
+  let rsi = getRSI(coin.history);
 
+  if(
+    ema20 > ema50 &&
+    coin.price > ema20 &&
+    rsi > 50 && rsi < 70
+  ){
+    decision = "buy";
+  }
+}
   user.portfolio[s] = amount; // ✅ WICHTIG
   coin.entry = coin.price;
 coin.entryTime = Date.now();
