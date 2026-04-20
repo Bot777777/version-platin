@@ -239,9 +239,9 @@ if(user.portfolio[s]){
 
 
   if(
-    change > 0.005 ||      // Take Profit (+0.3%)
+    change > 0.007 ||      // Take Profit (+0.3%)
     change < -0.005 ||     // Stop Loss (-0.2%)
-    duration > 120000       // Max 60 Sekunden
+    duration > 180000       // Max 60 Sekunden
   ){
 
     let invested = coin.entry * user.portfolio[s];
@@ -274,9 +274,9 @@ if(user.portfolio[s]){
   let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
   if(
-    change > 0.005 ||      // Gewinn (+0.3%)
+    change > 0.007 ||      // Gewinn (+0.3%)
     change < -0.005 ||     // Stop Loss (-0.2%)
-    duration > 120000       // Max 60 Sekunden
+    duration > 180000       // Max 60 Sekunden
   ){
 
     let invested = coin.shortEntry * user.shorts[s];
