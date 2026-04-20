@@ -247,12 +247,12 @@ if(user.portfolio[s]){
     let invested = coin.entry * user.portfolio[s];
     let returned = coin.price * user.portfolio[s];
     let fee = returned * FEE;
-
+    user.balance += returned - fee;
     user.fees += fee;
 
     let gain = (returned - invested) - fee;
 
-    user.balance += returned;
+  
     user.profit += gain;
 
     let logLine = `${new Date().toISOString()} | ${s} | LONG | ${gain}\n`;
@@ -282,12 +282,12 @@ if(user.portfolio[s]){
     let invested = coin.shortEntry * user.shorts[s];
     let returned = coin.price * user.shorts[s];
     let fee = returned * FEE;
-
+    user.balance += returned - fee;
     user.fees += fee;
 
     let gain = (invested - returned) - fee;
 
-    user.balance += invested;
+    
     user.profit += gain;
 
     let logLine = `${new Date().toISOString()} | ${s} | SHORT | ${gain}\n`;
