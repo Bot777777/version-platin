@@ -30,7 +30,7 @@ let user = {
     trades: 0,
     wins: 0
   },
-  maxOpenTrades: 3,
+  maxOpenTrades: 2,
   loggedIn: false
 };
 let botRunning = true;
@@ -171,7 +171,7 @@ function aiDecision(h){
   if(
     ema20 > ema50 &&        // Trend up
     price < ema20 &&        // über EMA
-    rsi < 40                // Rücksetzer!
+    rsi < 45                // Rücksetzer!
   ){
     return "buy";
   }
@@ -180,7 +180,7 @@ function aiDecision(h){
   if(
     ema20 < ema50 &&        // Trend down
     price > ema20 &&        // unter EMA
-    rsi > 60                // Rücksetzer!
+    rsi > 55                // Rücksetzer!
   ){
     return "short";
   }
@@ -336,7 +336,7 @@ let prev = h[h.length-2];
 if(market === "SIDE" && Math.abs(trendMove) < 0.0005) continue;
 
 // ❌ Bewegung minimal erhöhen
-//if(Math.abs(trendMove) < 0.0008) continue;
+if(Math.abs(trendMove) < 0.0005) continue;
 
 // ❌ LONG nur leichter Rücksetzer
 if(decision === "buy"){
