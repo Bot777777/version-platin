@@ -30,7 +30,7 @@ let user = {
     trades: 0,
     wins: 0
   },
-  maxOpenTrades: 2,
+  maxOpenTrades: 5,
   loggedIn: false
 };
 let botRunning = true;
@@ -171,7 +171,7 @@ function aiDecision(h){
   if(
     ema20 > ema50 &&        // Trend up
     price < ema20 &&        // über EMA
-    rsi < 35                // Rücksetzer!
+    rsi < 38                // Rücksetzer!
   ){
     return "buy";
   }
@@ -180,7 +180,7 @@ function aiDecision(h){
   if(
     ema20 < ema50 &&        // Trend down
     price > ema20 &&        // unter EMA
-    rsi > 65                // Rücksetzer!
+    rsi > 44                // Rücksetzer!
   ){
     return "short";
   }
