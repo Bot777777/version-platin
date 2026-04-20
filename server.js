@@ -30,7 +30,7 @@ let user = {
     trades: 0,
     wins: 0
   },
-  maxOpenTrades: 5,
+  maxOpenTrades: 4,
   loggedIn: false
 };
 let botRunning = true;
@@ -214,7 +214,7 @@ function getMarketState(h){
 }
 
 // ================= BOT =================
-const TRADE_SIZE = 50;
+const TRADE_SIZE = 125;
 const FEE = 0.001; 
 
 startWebSocket();
@@ -239,8 +239,8 @@ if(user.portfolio[s]){
 
 
   if(
-    change > 0.007 ||      // Take Profit (+0.3%)
-    change < -0.005 ||     // Stop Loss (-0.2%)
+    change > 0.008 ||      // Take Profit (+0.3%)
+    change < -0.0025 ||     // Stop Loss (-0.2%)
     duration > 180000       // Max 60 Sekunden
   ){
 
@@ -274,8 +274,8 @@ if(user.portfolio[s]){
   let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
   if(
-    change > 0.007 ||      // Gewinn (+0.3%)
-    change < -0.005 ||     // Stop Loss (-0.2%)
+    change > 0.008 ||      // Gewinn (+0.3%)
+    change < -0.0025 ||     // Stop Loss (-0.2%)
     duration > 180000       // Max 60 Sekunden
   ){
 
