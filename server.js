@@ -274,8 +274,8 @@ if(user.portfolio[s]){
   let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
   if(
-    change > 0.005 ||      // Gewinn (+0.3%)
-    change < -0.005 ||     // Stop Loss (-0.2%)
+    change > 0.008 ||      // Gewinn (+0.3%)
+    change < -0.004 ||     // Stop Loss (-0.2%)
     duration > 120000       // Max 60 Sekunden
   ){
 
