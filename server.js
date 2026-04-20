@@ -160,7 +160,7 @@ function getRSI(prices, period = 14){
 
 function aiDecision(h){
 
-  if(h.length < 50) return "hold";
+  if(h.length <30) return "hold";
 
   let ema20 = getEMA(h.slice(-20), 20);
   let ema50 = getEMA(h.slice(-50), 50);
@@ -326,8 +326,13 @@ if(
 
   let trendMove = (h[h.length-1] - h[h.length-10]) / h[h.length-10];
   let market = getMarketState(coin.history);
-
-
+  if(s === "BTCUSDT") {
+    
+  // BTC darf aggressiver handeln
+  } else {
+  if(market === "SIDE" && Math.abs(trendMove) < 0.0005) continue;
+}
+  
 // ================= FILTER (LOCKER) =================
 
 let last = h[h.length-1];
