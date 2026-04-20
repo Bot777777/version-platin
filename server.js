@@ -169,9 +169,9 @@ function aiDecision(h){
 
   // 🔥 LONG
   if(
-    ema20 > ema50 &&        // Trend up
-    price < ema20 &&        // über EMA
-    rsi <40               // Rücksetzer!
+    ema20 > ema50 &&           // Trend up
+    price < ema20 &&           // über EMA
+(rsi < 40 || s === "BTCUSDT")  // Rücksetzer!
   ){
     return "buy";
   }
@@ -239,8 +239,8 @@ if(user.portfolio[s]){
 
 
   if(
-    change > 0.008 ||      // Take Profit (+0.3%)
-    change < -0.004 ||     // Stop Loss (-0.2%)
+    change > 0.005 ||      // Take Profit (+0.3%)
+    change < -0.003 ||     // Stop Loss (-0.2%)
     duration > 120000       // Max 60 Sekunden
   ){
 
@@ -333,7 +333,7 @@ let last = h[h.length-1];
 let prev = h[h.length-2];
 
 // ❌ nur extreme Seitwärtsphasen skippen
-if(market === "SIDE" && Math.abs(trendMove) < 0.001) continue;
+if(market === "SIDE" && Math.abs(trendMove) < 0.005) continue;
 
 // ❌ Bewegung minimal erhöhen
 //if(Math.abs(trendMove) < 0.0005) continue;
