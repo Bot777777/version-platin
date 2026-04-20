@@ -166,12 +166,13 @@ function aiDecision(h){
   let ema50 = getEMA(h.slice(-50), 50);
   let price = h[h.length - 1];
   let rsi = getRSI(h);
-
+  let last = h[h.length - 1];
+  let prev = h[h.length - 2];
   // 🔥 LONG
   if(
     ema20 > ema50 &&        // Trend up
     price < ema20 &&        // über EMA
-    rsi < 45                // Rücksetzer!
+    rsi < 50 &&               // Rücksetzer!
     last > prev
   ){
     return "buy";
@@ -183,7 +184,7 @@ function aiDecision(h){
     price > ema20 &&        // unter EMA
     rsi > 60                // Rücksetzer!
   ){
-  //  return "short";
+  return "short";
   }
 
   return "hold";
