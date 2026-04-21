@@ -168,15 +168,17 @@ function aiDecision(h){
   let rsi = getRSI(h);
   let last = h[h.length - 1];
   let prev = h[h.length - 2];
-  // 🔥 LONG
-  if(
-    ema20 > ema50 &&        // Trend up
-    price < ema20 &&        // über EMA
-    rsi < 50 &&               // Rücksetzer!
-    last > prev
-  ){
-    return "buy";
-  }
+ 
+ // 🔥 LONG (Pullback + Trend)
+if(
+  ema20 > ema50 &&
+  (
+    (price < ema20 && rsi < 50) ||     // Pullback
+    (price > ema20 && last > prev)     // 🚀 Trend
+  )
+){
+  return "buy";
+}  
 
   // 🔥 SHORT
   if(
@@ -241,9 +243,9 @@ if(user.portfolio[s]){
 
 
   if(
-    change > 0.007 ||      // Take Profit (+0.3%)
+    change > 0.009 ||      // Take Profit (+0.3%)
     change < -0.005 ||     // Stop Loss (-0.2%)
-    duration > 120000       // Max 60 Sekunden
+    duration > 300000       // Max 60 Sekunden
   ){
 
     let invested = coin.entry * user.portfolio[s];
@@ -275,7 +277,7 @@ if(user.portfolio[s]){
   let change = (coin.shortEntry - coin.price) / coin.shortEntry;
   let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 if(
-  change > 0.006 ||      // Gewinn (0.6%)
+  change > 0.009 ||      // Gewinn (0.6%)
   (duration > 300000 && change > -0.002) ||  // nach Zeit nur raus wenn nicht schlimm im Minus
   change < -0.006        // harter Stop Loss
 ){
@@ -314,7 +316,7 @@ if(
   let now = Date.now();
 
   if(!user.lastTrade) user.lastTrade = {};
-  if(user.lastTrade[s] && now - user.lastTrade[s] < 120000){
+  if(user.lastTrade[s] && now - user.lastTrade[s] < 300000){
     continue;
   }
 
