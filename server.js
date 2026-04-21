@@ -239,7 +239,7 @@ if(user.portfolio[s]){
 
 
   if(
-    change > 0.012 ||      // Take Profit (+0.3%)
+    change > 0.013 ||      // Take Profit (+0.3%)
     change < -0.015 ||     // Stop Loss (-0.2%)
     duration > 300000       // Max 60 Sekunden
   ){
@@ -274,7 +274,7 @@ if(user.portfolio[s]){
   let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
   if(
-    change > 0.012 ||      // Gewinn (+0.3%)
+    change > 0.013 ||      // Gewinn (+0.3%)
     change < -0.015 ||     // Stop Loss (-0.2%)
     duration > 300000       // Max 60 Sekunden
   ){
