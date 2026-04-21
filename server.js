@@ -170,16 +170,16 @@ function aiDecision(h){
   let prev = h[h.length - 2];
  
  // 🔥 LONG (Pullback + Trend)
-if(
+  
+ if(
   ema20 > ema50 &&
-  (
-    (price < ema20 && rsi < 50) ||     // Pullback
-    (price > ema20 && last > prev)     // 🚀 Trend
-  )
+  price < ema20 &&
+  rsi < 45 &&
+  last > prev
 ){
   return "buy";
-}  
-
+}
+  
   // 🔥 SHORT
   if(
     ema20 < ema50 &&        // Trend down
@@ -229,7 +229,10 @@ setInterval(()=>{
   if(!botRunning) return;
 
 for(let s of symbols){
-
+  
+if(user.lastTrade[s] && Date.now() - user.lastTrade[s] < 300000){
+  continue;
+}
   let coin = coins[s];
   if(coin.price === 0) continue;
 
@@ -243,7 +246,7 @@ if(user.portfolio[s]){
 
 
   if(
-    change > 0.009 ||      // Take Profit (+0.3%)
+    change > 0.012 ||      // Take Profit (+0.3%)
     change < -0.005 ||     // Stop Loss (-0.2%)
     duration > 300000       // Max 60 Sekunden
   ){
@@ -277,7 +280,7 @@ if(user.portfolio[s]){
   let change = (coin.shortEntry - coin.price) / coin.shortEntry;
   let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 if(
-  change > 0.009 ||      // Gewinn (0.6%)
+  change > 0.012 ||      // Gewinn (0.6%)
   (duration > 300000 && change > -0.002) ||  // nach Zeit nur raus wenn nicht schlimm im Minus
   change < -0.006        // harter Stop Loss
 ){
