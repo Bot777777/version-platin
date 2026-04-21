@@ -240,7 +240,7 @@ if(user.portfolio[s]){
 
   if(
     change > 0.012 ||      // Take Profit (+0.3%)
-    change < -0.005 ||     // Stop Loss (-0.2%)
+    change < -0.015 ||     // Stop Loss (-0.2%)
     duration > 300000       // Max 60 Sekunden
   ){
 
@@ -275,7 +275,7 @@ if(user.portfolio[s]){
 
   if(
     change > 0.012 ||      // Gewinn (+0.3%)
-    change < -0.005 ||     // Stop Loss (-0.2%)
+    change < -0.015 ||     // Stop Loss (-0.2%)
     duration > 300000       // Max 60 Sekunden
   ){
 
