@@ -158,7 +158,7 @@ function getRSI(prices, period = 14){
   return 100 - (100 / (1 + rs));
 }
 
-function aiDecision(h){
+function aiDecision(h, symbol){
 
   if(h.length < 50) return "hold";
 
@@ -166,12 +166,12 @@ function aiDecision(h){
   let ema50 = getEMA(h.slice(-50), 50);
   let price = h[h.length - 1];
   let rsi = getRSI(h);
-
+  if(symbol === "BTCUSDT"){
   // 🔥 LONG
   if(
     ema20 > ema50 &&        // Trend up
     price < ema20 &&        // über EMA
-    rsi < 48                // Rücksetzer!
+    rsi < 52                // Rücksetzer!
   ){
     return "buy";
   }
@@ -180,7 +180,7 @@ function aiDecision(h){
   if(
     ema20 < ema50 &&        // Trend down
     price > ema20 &&        // unter EMA
-    rsi > 52                // Rücksetzer!
+    rsi > 48                // Rücksetzer!
   ){
     return "short";
   }
@@ -324,7 +324,7 @@ tradeLog.unshift("CLOSE SHORT " + s + " | " + gain.toFixed(2) + "$");
   }
 
   // ================= AI =================
-  let decision = aiDecision(coin.history);
+  let decision = aiDecision(coin.history, s);
   console.log(s, decision);
   let h = coin.history;
   if(h.length < 10) continue;
