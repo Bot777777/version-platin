@@ -142,22 +142,6 @@ async function fetchCandles(symbol){
 }
 
 // ================= AI =================
-function getRSI(prices, period = 14){
-  if(prices.length < period + 1) return 50;
-
-  let gains = 0;
-  let losses = 0;
-
-  for(let i = prices.length - period; i < prices.length; i++){
-    let diff = prices[i] - prices[i-1];
-    if(diff >= 0) gains += diff;
-    else losses -= diff;
-  }
-
-  let rs = gains / (losses || 1);
-  return 100 - (100 / (1 + rs));
-}
-
 function aiDecision(h, symbol){
 
   if(h.length < 50) return "hold";
@@ -166,27 +150,47 @@ function aiDecision(h, symbol){
   let ema50 = getEMA(h.slice(-50), 50);
   let price = h[h.length - 1];
   let rsi = getRSI(h);
+
+  // 🔥 BTC SPECIAL
   if(symbol === "BTCUSDT"){
-  // 🔥 LONG
+
+    if(
+      ema20 > ema50 &&
+      price > ema20 &&
+      rsi > 52
+    ){
+      return "buy";
+    }
+
+    if(
+      ema20 < ema50 &&
+      price < ema20 &&
+      rsi < 48
+    ){
+      return "short";
+    }
+
+  } // ✅ GANZ WICHTIG!
+
+  // 🔥 NORMAL LONG
   if(
-    ema20 > ema50 &&        // Trend up
-    price < ema20 &&        // über EMA
-    rsi < 52                // Rücksetzer!
+    ema20 > ema50 &&
+    price < ema20 &&
+    rsi < 48
   ){
     return "buy";
   }
 
-  // 🔥 SHORT
+  // 🔥 NORMAL SHORT
   if(
-    ema20 < ema50 &&        // Trend down
-    price > ema20 &&        // unter EMA
-    rsi > 48                // Rücksetzer!
+    ema20 < ema50 &&
+    price > ema20 &&
+    rsi > 52
   ){
     return "short";
   }
 
   return "hold";
-
 }// ================= SMART MODE =================
 function getEMA(prices, period){
   let k = 2/(period+1);
