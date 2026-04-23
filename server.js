@@ -171,7 +171,7 @@ function aiDecision(h){
   if(
     ema20 > ema50 &&        // Trend up
     price < ema20 &&        // über EMA
-    rsi < 40                // Rücksetzer!
+    rsi < 48                // Rücksetzer!
   ){
     return "buy";
   }
@@ -180,7 +180,7 @@ function aiDecision(h){
   if(
     ema20 < ema50 &&        // Trend down
     price > ema20 &&        // unter EMA
-    rsi > 60                // Rücksetzer!
+    rsi > 52                // Rücksetzer!
   ){
     return "short";
   }
@@ -215,7 +215,7 @@ function getMarketState(h){
 
 // ================= BOT =================
 const TRADE_SIZE = 50;
-const FEE = 0.001; 
+const FEE = 0.00075; 
 
 startWebSocket();
 
@@ -239,8 +239,8 @@ if(user.portfolio[s]){
 
 
   if(
-    change > 0.013 ||      // Take Profit (+0.3%)
-    change < -0.015 ||     // Stop Loss (-0.2%)
+    change > 0.02 ||      // Take Profit (+0.3%)
+    change < -0.01 ||     // Stop Loss (-0.2%)
     duration > 300000       // Max 60 Sekunden
   ){
 
@@ -255,9 +255,12 @@ if(user.portfolio[s]){
     user.balance += returned;
     user.profit += gain;
 
-    let logLine = `${new Date().toISOString()} | ${s} | LONG | ${gain}\n`;
-    fs.appendFileSync("trades.log", logLine);
+let logLine = `${new Date().toISOString()} | ${s} | LONG | ${gain}\n`;
+fs.appendFileSync("trades.log", logLine);
 
+
+tradeLog.unshift("SELL " + s + " | " + gain.toFixed(2) + "$");
+    
     user.portfolio[s] = 0;
     coin.entry = null;
     coin.entryTime = null;
@@ -290,9 +293,12 @@ if(user.portfolio[s]){
     user.balance += invested;
     user.profit += gain;
 
-    let logLine = `${new Date().toISOString()} | ${s} | SHORT | ${gain}\n`;
-    fs.appendFileSync("trades.log", logLine);
+ let logLine = `${new Date().toISOString()} | ${s} | SHORT | ${gain}\n`;
+fs.appendFileSync("trades.log", logLine);
 
+
+tradeLog.unshift("CLOSE SHORT " + s + " | " + gain.toFixed(2) + "$");
+    
     user.shorts[s] = 0;
     coin.shortEntry = null;
     coin.entryTime = null;
@@ -313,7 +319,7 @@ if(user.portfolio[s]){
   let now = Date.now();
 
   if(!user.lastTrade) user.lastTrade = {};
-  if(user.lastTrade[s] && now - user.lastTrade[s] < 120000){
+  if(user.lastTrade[s] && now - user.lastTrade[s] < 300000){
     continue;
   }
 
@@ -333,7 +339,7 @@ let last = h[h.length-1];
 let prev = h[h.length-2];
 
 // ❌ nur extreme Seitwärtsphasen skippen
-if(market === "SIDE" && Math.abs(trendMove) < 0.0005) continue;
+if(market === "SIDE" && Math.abs(trendMove) < 0.0003) continue;
 
 // ❌ Bewegung minimal erhöhen
 //if(Math.abs(trendMove) < 0.0008) continue;
@@ -356,7 +362,7 @@ if(decision==="buy" && !user.portfolio[s] && !user.shorts[s]){
   coin.entry = coin.price;
 coin.entryTime = Date.now();
   user.lastTrade[s] = now;
-  tradeLog.unshift("BUY "+s);
+tradeLog.unshift("SHORT "+s+" @ "+coin.price.toFixed(2));
   user.globalLastTrade = now;
 }
     // SHORT
