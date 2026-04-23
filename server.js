@@ -30,7 +30,8 @@ let user = {
     trades: 0,
     wins: 0
   },
-  maxOpenTrades: 3,
+  maxOpenTrades: 5
+  ,
   loggedIn: false
 };
 let botRunning = true;
@@ -142,7 +143,7 @@ async function fetchCandles(symbol){
 }
 
 // ================= AI =================
-function aiDecision(h, symbol){
+function aiDecision(h){
 
   if(h.length < 50) return "hold";
 
@@ -151,41 +152,20 @@ function aiDecision(h, symbol){
   let price = h[h.length - 1];
   let rsi = getRSI(h);
 
-  // 🔥 BTC SPECIAL
-  if(symbol === "BTCUSDT"){
-
-    if(
-      ema20 > ema50 &&
-      price > ema20 &&
-      rsi > 50
-    ){
-      return "buy";
-    }
-
-    if(
-      ema20 < ema50 &&
-      price < ema20 &&
-      rsi < 50
-    ){
-      return "short";
-    }
-
-  } // ✅ GANZ WICHTIG!
-
-  // 🔥 NORMAL LONG
+  // LONG → Pullback im Aufwärtstrend
   if(
     ema20 > ema50 &&
     price < ema20 &&
-    rsi < 55
+    rsi < 50
   ){
     return "buy";
   }
 
-  // 🔥 NORMAL SHORT
+  // SHORT → Pullback im Abwärtstrend
   if(
     ema20 < ema50 &&
     price > ema20 &&
-    rsi > 45
+    rsi > 50
   ){
     return "short";
   }
