@@ -157,7 +157,7 @@ function aiDecision(h, symbol){
     if(
       ema20 > ema50 &&
       price > ema20 &&
-      rsi > 52
+      rsi > 50
     ){
       return "buy";
     }
@@ -165,7 +165,7 @@ function aiDecision(h, symbol){
     if(
       ema20 < ema50 &&
       price < ema20 &&
-      rsi < 48
+      rsi < 50
     ){
       return "short";
     }
@@ -176,7 +176,7 @@ function aiDecision(h, symbol){
   if(
     ema20 > ema50 &&
     price < ema20 &&
-    rsi < 48
+    rsi < 55
   ){
     return "buy";
   }
@@ -185,7 +185,7 @@ function aiDecision(h, symbol){
   if(
     ema20 < ema50 &&
     price > ema20 &&
-    rsi > 52
+    rsi > 45
   ){
     return "short";
   }
