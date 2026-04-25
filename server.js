@@ -238,13 +238,22 @@ for(let s of symbols){
 if(user.portfolio[s]){
 
   let change = (coin.price - coin.entry)/coin.entry;
+  
+  if(!coin.highest) coin.highest = coin.entry;
+if(coin.price > coin.highest) coin.highest = coin.price;
+
+// Trailing Stop
+if(coin.price < coin.highest * 0.997){
+  // erzwinge Exit
+  change = -1;
+}
   let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
 
 
   if(
-    change > 0.02 ||      // Take Profit (+0.3%)
-    change < -0.01 ||     // Stop Loss (-0.2%)
+    change > 0.01 ||      // Take Profit (+0.3%)
+    change < -0.005 ||     // Stop Loss (-0.2%)
     duration >600000       // Max 60 Sekunden
   ){
 
@@ -500,9 +509,9 @@ async function loadChart(symbol){
   const series = chart.addCandlestickSeries();
 
   // 5. DATEN MAPPEN
-  const data = candles.map((c, i) => ({
-    time: i,
-    open: c.open,
+const data = candles.map((c) => ({
+  time: Math.floor(c.time / 1000),
+  open: c.open,
     high: c.high,
     low: c.low,
     close: c.close
