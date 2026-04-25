@@ -457,6 +457,7 @@ Profit/Trade: $<span id="ppt"></span><br><br>
 <div id="chartContainer" style="margin:auto;width:900px"></div>
 <div id="log" style="text-align:center;margin-top:30px"></div>
 <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+
 <script>
 let selectedCoin = null;
 
