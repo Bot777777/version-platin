@@ -30,8 +30,7 @@ let user = {
     trades: 0,
     wins: 0
   },
-  maxOpenTrades: 5
-  ,
+  maxOpenTrades: 3,
   loggedIn: false
 };
 let botRunning = true;
@@ -143,34 +142,51 @@ async function fetchCandles(symbol){
 }
 
 // ================= AI =================
+function getRSI(prices, period = 14){
+  if(prices.length < period + 1) return 50;
+
+  let gains = 0;
+  let losses = 0;
+
+  for(let i = prices.length - period; i < prices.length; i++){
+    let diff = prices[i] - prices[i-1];
+    if(diff >= 0) gains += diff;
+    else losses -= diff;
+  }
+
+  let rs = gains / (losses || 1);
+  return 100 - (100 / (1 + rs));
+}
+
 function aiDecision(h){
 
-  if(h.length < 20 ) return "hold";
+  if(h.length < 50) return "hold";
 
   let ema20 = getEMA(h.slice(-20), 20);
   let ema50 = getEMA(h.slice(-50), 50);
   let price = h[h.length - 1];
   let rsi = getRSI(h);
 
-  // LONG → Pullback im Aufwärtstrend
+  // 🔥 LONG
   if(
-    ema20 > ema50 &&
-    price < ema20 &&
-    rsi < 50
+    ema20 > ema50 &&        // Trend up
+    price < ema20 &&        // über EMA
+    rsi < 48                // Rücksetzer!
   ){
     return "buy";
   }
 
-  // SHORT → Pullback im Abwärtstrend
+  // 🔥 SHORT
   if(
-    ema20 < ema50 &&
-    price > ema20 &&
-    rsi > 50
+    ema20 < ema50 &&        // Trend down
+    price > ema20 &&        // unter EMA
+    rsi > 52                // Rücksetzer!
   ){
     return "short";
   }
 
   return "hold";
+
 }// ================= SMART MODE =================
 function getEMA(prices, period){
   let k = 2/(period+1);
@@ -261,9 +277,9 @@ tradeLog.unshift("SELL " + s + " | " + gain.toFixed(2) + "$");
   let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
   if(
-    change > 0.013 ||      // Gewinn (+0.3%)
-    change < -0.015 ||     // Stop Loss (-0.2%)
-    duration > 300000       // Max 60 Sekunden
+    change > 0.02 ||      // Gewinn (+0.3%)
+    change < -0.01 ||     // Stop Loss (-0.2%)
+    duration > 120000       // Max 60 Sekunden
   ){
 
     let invested = coin.shortEntry * user.shorts[s];
@@ -277,7 +293,7 @@ tradeLog.unshift("SELL " + s + " | " + gain.toFixed(2) + "$");
     user.balance += invested;
     user.profit += gain;
 
- let logLine = `${new Date().toISOString()} | ${s} | SHORT | ${gain}\n`;
+let logLine = `${new Date().toISOString()} | ${s} | SHORT | ${gain}\n`;
 fs.appendFileSync("trades.log", logLine);
 
 
@@ -303,12 +319,12 @@ tradeLog.unshift("CLOSE SHORT " + s + " | " + gain.toFixed(2) + "$");
   let now = Date.now();
 
   if(!user.lastTrade) user.lastTrade = {};
-  if(user.lastTrade[s] && now - user.lastTrade[s] < 60000){
+  if(user.lastTrade[s] && now - user.lastTrade[s] < 120000){
     continue;
   }
 
   // ================= AI =================
-  let decision = aiDecision(coin.history, s);
+  let decision = aiDecision(coin.history);
   console.log(s, decision);
   let h = coin.history;
   if(h.length < 10) continue;
@@ -323,7 +339,7 @@ let last = h[h.length-1];
 let prev = h[h.length-2];
 
 // ❌ nur extreme Seitwärtsphasen skippen
-// if(market === "SIDE" && Math.abs(trendMove) < 0.0003) continue;
+if(market === "SIDE" && Math.abs(trendMove) < 0.0003) continue;
 
 // ❌ Bewegung minimal erhöhen
 //if(Math.abs(trendMove) < 0.0008) continue;
@@ -346,7 +362,7 @@ if(decision==="buy" && !user.portfolio[s] && !user.shorts[s]){
   coin.entry = coin.price;
 coin.entryTime = Date.now();
   user.lastTrade[s] = now;
-tradeLog.unshift("BUY "+s+" @ "+coin.price.toFixed(2));
+tradeLog.unshift("BUY " + s + " @ " + coin.price.toFixed(2));
   user.globalLastTrade = now;
 }
     // SHORT
@@ -358,8 +374,8 @@ if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
   coin.shortEntry = coin.price;
 coin.entryTime = Date.now();
   user.lastTrade[s] = now;
-  tradeLog.unshift("SHORT "+s);
-   user.globalLastTrade = now;
+tradeLog.unshift("SHORT " + s + " @ " + coin.price.toFixed(2));
+  user.globalLastTrade = now;
    }
  }
 },400);
