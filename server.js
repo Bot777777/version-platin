@@ -463,7 +463,6 @@ let selectedCoin = null;
 
 function selectCoin(c){
   if(selectedCoin === c){
-    // 👉 wieder schließen
     chartContainer.innerHTML = "";
     selectedCoin = null;
     return;
@@ -471,9 +470,41 @@ function selectCoin(c){
 
   selectedCoin = c;
   loadChart(c);
-  }
+}
+
 async function loadChart(symbol){
-  let res = await fetch('/candles/'+symbol);
+  let res = await fetch('/candles/' + symbol);
+  let candles = await res.json();
+
+  chartContainer.innerHTML = "<div id='chart' style='width:900px;height:400px'></div>";
+
+  const chart = LightweightCharts.createChart(
+    document.getElementById("chart"),
+    {
+      layout: {
+        background: { color: "#0b0f14" },
+        textColor: "#DDD",
+      },
+      grid: {
+        vertLines: { color: "#222" },
+        horzLines: { color: "#222" },
+      }
+    }
+  );
+
+  const series = chart.addCandlestickSeries();
+
+  const data = candles.map((c, i) => ({
+    time: i,
+    open: c.open,
+    high: c.high,
+    low: c.low,
+    close: c.close
+  }));
+
+  series.setData(data);
+}
+let res = await fetch('/candles/'+symbol);
   let candles = await res.json();
 
   chartContainer.innerHTML = "<div id='chart' style='width:900px;height:400px'></div>";
