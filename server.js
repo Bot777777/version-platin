@@ -511,7 +511,7 @@ async function loadChart(symbol){
   // 6. DATEN SETZEN
   series.setData(data);
 }
-backgro
+
 async function load(){
   let d=await (await fetch('/data')).json();
   balance.innerText=d.user.balance.toFixed(2);
