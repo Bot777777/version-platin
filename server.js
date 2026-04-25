@@ -175,7 +175,13 @@ function aiDecision(h){
   ){
     return "buy";
   }
-
+if(
+  ema20 > ema50 &&
+  price > ema20 &&
+  rsi > 55
+){
+  return "buy";
+}
   // 🔥 SHORT
   if(
     ema20 < ema50 &&        // Trend down
@@ -184,7 +190,13 @@ function aiDecision(h){
   ){
     return "short";
   }
-
+if(
+  ema20 < ema50 &&
+  price < ema20 &&
+  rsi < 45
+){
+  return "short";
+}
   return "hold";
 
 }// ================= SMART MODE =================
