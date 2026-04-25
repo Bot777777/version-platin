@@ -40,10 +40,7 @@ let symbols = [
   "BTCUSDT",
   "ETHUSDT",
   "SOLUSDT",
-  "AVAXUSDT",
-  "LINKUSDT",
-  "BNBUSDT",
-"XRPUSDT",
+  "XRPUSDT",
 
 
 
@@ -360,7 +357,12 @@ if(decision === "buy"){
 if(decision === "short"){
 // if(last < prev * 0.999) continue;
 }
+  let move = Math.abs((h[h.length-1] - h[h.length-5]) / h[h.length-5]);
+
+if(move < 0.0015) continue;
+  
   // BUY
+  
 if(decision==="buy" && !user.portfolio[s] && !user.shorts[s]){
   let amount = TRADE_SIZE / coin.price;
   user.balance -= TRADE_SIZE;
@@ -373,6 +375,7 @@ tradeLog.unshift("BUY " + s + " @ " + coin.price.toFixed(2));
   user.globalLastTrade = now;
 }
     // SHORT
+  
 if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
   let amount = TRADE_SIZE / coin.price;
   user.balance -= TRADE_SIZE;
@@ -385,7 +388,7 @@ tradeLog.unshift("SHORT " + s + " @ " + coin.price.toFixed(2));
   user.globalLastTrade = now;
    }
  }
-},400);
+},2000);
 
 // ================= API =================
 app.get("/data",(req,res)=>{
