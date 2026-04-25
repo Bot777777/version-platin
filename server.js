@@ -490,7 +490,7 @@ async function loadChart(symbol){
     }
   );
 
-  const series = chart.addCandlestickSeries();
+const series = chart.addSeries(LightweightCharts.CandlestickSeries);
 
   const data = candles.map((c, i) => ({
     time: i,
