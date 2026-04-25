@@ -359,7 +359,7 @@ if(decision === "short"){
 }
   let move = Math.abs((h[h.length-1] - h[h.length-5]) / h[h.length-5]);
 
-if(move < 0.0015) continue;
+if(move < 0.0005) continue;
   
   // BUY
   
@@ -456,31 +456,51 @@ Profit/Trade: $<span id="ppt"></span><br><br>
 <div id="coins" style="display:flex;flex-wrap:wrap;justify-content:center"></div>
 <div id="chartContainer" style="margin:auto;width:900px"></div>
 <div id="log" style="text-align:center;margin-top:30px"></div>
+<script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
 <script>
+let selectedCoin = null;
+
 function selectCoin(c){
+  if(selectedCoin === c){
+    // 👉 wieder schließen
+    chartContainer.innerHTML = "";
+    selectedCoin = null;
+    return;
+  }
+
+  selectedCoin = c;
   loadChart(c);
-}
 async function loadChart(symbol){
   let res = await fetch('/candles/'+symbol);
   let candles = await res.json();
-  chartContainer.innerHTML="<canvas id='c' width='900' height='400'></canvas>";
-  let ctx=document.getElementById("c").getContext("2d");
-  let max=Math.max(...candles.map(c=>c.high));
-  let min=Math.min(...candles.map(c=>c.low));
-  candles.forEach((c,i)=>{
-    let x=i*12;
-    let open=400-(c.open-min)/(max-min)*350;
-    let close=400-(c.close-min)/(max-min)*350;
-    let high=400-(c.high-min)/(max-min)*350;
-    let low=400-(c.low-min)/(max-min)*350;
-    ctx.beginPath();
-    ctx.moveTo(x,high);
-    ctx.lineTo(x,low);
-    ctx.strokeStyle="white";
-    ctx.stroke();
-    ctx.fillStyle=c.close>c.open?"lime":"red";
-    ctx.fillRect(x-4,Math.min(open,close),8,Math.abs(open-close)||1);
-  });
+
+  chartContainer.innerHTML = "<div id='chart' style='width:900px;height:400px'></div>";
+
+  const chart = LightweightCharts.createChart(
+    document.getElementById("chart"),
+    {
+      layout: {
+        background: { color: "#0b0f14" },
+        textColor: "#DDD",
+      },
+      grid: {
+        vertLines: { color: "#222" },
+        horzLines: { color: "#222" },
+      }
+    }
+  );
+
+  const series = chart.addCandlestickSeries();
+
+  const data = candles.map((c, i) => ({
+    time: i,
+    open: c.open,
+    high: c.high,
+    low: c.low,
+    close: c.close
+  }));
+
+  series.setData(data);
 }
 async function load(){
   let d=await (await fetch('/data')).json();
