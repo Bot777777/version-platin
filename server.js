@@ -470,6 +470,7 @@ function selectCoin(c){
 
   selectedCoin = c;
   loadChart(c);
+  }
 async function loadChart(symbol){
   let res = await fetch('/candles/'+symbol);
   let candles = await res.json();
