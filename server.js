@@ -323,7 +323,7 @@ tradeLog.unshift("CLOSE SHORT " + s + " | " + gain.toFixed(2) + "$");
   let now = Date.now();
 
   if(!user.lastTrade) user.lastTrade = {};
-  if(user.lastTrade[s] && now - user.lastTrade[s] < 120000){
+  if(user.lastTrade[s] && now - user.lastTrade[s] <30000){
     continue;
   }
 
@@ -359,7 +359,7 @@ if(decision === "short"){
 }
   let move = Math.abs((h[h.length-1] - h[h.length-5]) / h[h.length-5]);
 
-if(move < 0.0005) continue;
+if(move < 0.0001) continue;
   
   // BUY
   
@@ -456,7 +456,7 @@ Profit/Trade: $<span id="ppt"></span><br><br>
 <div id="coins" style="display:flex;flex-wrap:wrap;justify-content:center"></div>
 <div id="chartContainer" style="margin:auto;width:900px"></div>
 <div id="log" style="text-align:center;margin-top:30px"></div>
-
+<script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
 <script>
 let selectedCoin = null;
 
@@ -491,7 +491,7 @@ async function loadChart(symbol){
     }
   );
 
-const series = chart.addSeries(LightweightCharts.CandlestickSeries);
+const series = chart.addCandlestickSeries();
 
   const data = candles.map((c, i) => ({
     time: i,
