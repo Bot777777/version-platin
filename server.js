@@ -460,7 +460,7 @@ Profit/Trade: $<span id="ppt"></span><br><br>
 
 <script>
 let selectedCoin = null;
-
+const chartContainer = document.getElementById("chartContainer");
 function selectCoin(c){
   if(selectedCoin === c){
     chartContainer.innerHTML = "";
