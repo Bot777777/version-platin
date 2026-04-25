@@ -473,11 +473,15 @@ function selectCoin(c){
 }
 
 async function loadChart(symbol){
+
+  // 1. DATEN LADEN
   let res = await fetch('/candles/' + symbol);
   let candles = await res.json();
 
+  // 2. CHART CONTAINER
   chartContainer.innerHTML = "<div id='chart' style='width:900px;height:400px'></div>";
 
+  // 3. CHART ERSTELLEN
   const chart = LightweightCharts.createChart(
     document.getElementById("chart"),
     {
@@ -492,8 +496,10 @@ async function loadChart(symbol){
     }
   );
 
+  // 4. SERIES
   const series = chart.addCandlestickSeries();
 
+  // 5. DATEN MAPPEN
   const data = candles.map((c, i) => ({
     time: i,
     open: c.open,
@@ -502,39 +508,10 @@ async function loadChart(symbol){
     close: c.close
   }));
 
+  // 6. DATEN SETZEN
   series.setData(data);
 }
-let res = await fetch('/candles/'+symbol);
-  let candles = await res.json();
-
-  chartContainer.innerHTML = "<div id='chart' style='width:900px;height:400px'></div>";
-
-  const chart = LightweightCharts.createChart(
-    document.getElementById("chart"),
-    {
-      layout: {
-        background: { color: "#0b0f14" },
-        textColor: "#DDD",
-      },
-      grid: {
-        vertLines: { color: "#222" },
-        horzLines: { color: "#222" },
-      }
-    }
-  );
-
-const series = chart.addSeries(LightweightCharts.CandlestickSeries);
-
-  const data = candles.map((c, i) => ({
-    time: i,
-    open: c.open,
-    high: c.high,
-    low: c.low,
-    close: c.close
-  }));
-
-  series.setData(data);
-}
+backgro
 async function load(){
   let d=await (await fetch('/data')).json();
   balance.innerText=d.user.balance.toFixed(2);
