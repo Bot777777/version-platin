@@ -456,7 +456,7 @@ Profit/Trade: $<span id="ppt"></span><br><br>
 <div id="coins" style="display:flex;flex-wrap:wrap;justify-content:center"></div>
 <div id="chartContainer" style="margin:auto;width:900px"></div>
 <div id="log" style="text-align:center;margin-top:30px"></div>
-<script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+<script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 
 <script>
 let selectedCoin = null;
@@ -492,7 +492,7 @@ async function loadChart(symbol){
     }
   );
 
-const series = chart.addCandlestickSeries();
+const series = chart.addSeries(LightweightCharts.CandlestickSeries);
 
   const data = candles.map((c, i) => ({
     time: i,
