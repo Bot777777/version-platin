@@ -239,9 +239,9 @@ if(user.portfolio[s]){
 
 
   if(
-    change > 0.02 ||      // Take Profit (+0.3%)
-    change < -0.01 ||     // Stop Loss (-0.2%)
-    duration > 300000       // Max 60 Sekunden
+    change > 0.01 ||      // Take Profit (+0.3%)
+    change < -0.008 ||     // Stop Loss (-0.2%)
+    duration > 180000       // Max 60 Sekunden
   ){
 
     let invested = coin.entry * user.portfolio[s];
@@ -277,9 +277,9 @@ tradeLog.unshift("SELL " + s + " | " + gain.toFixed(2) + "$");
   let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
   if(
-    change > 0.02 ||      // Gewinn (+0.3%)
-    change < -0.01 ||     // Stop Loss (-0.2%)
-    duration > 120000       // Max 60 Sekunden
+    change > 0.01 ||      // Gewinn (+0.3%)
+    change < -0.008 ||     // Stop Loss (-0.2%)
+    duration > 180000       // Max 60 Sekunden
   ){
 
     let invested = coin.shortEntry * user.shorts[s];
