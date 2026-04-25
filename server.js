@@ -44,9 +44,9 @@ let symbols = [
   "LINKUSDT",
   "BNBUSDT",
 "XRPUSDT",
-"ADAUSDT",
-"MATICUSDT",
-"DOGEUSDT",
+
+
+
   ];
 let coins = {};
 symbols.forEach(s=>{
@@ -159,7 +159,6 @@ function getRSI(prices, period = 14){
 }
 
 function aiDecision(h){
-
   if(h.length < 50) return "hold";
 
   let ema20 = getEMA(h.slice(-20), 20);
@@ -167,24 +166,35 @@ function aiDecision(h){
   let price = h[h.length - 1];
   let rsi = getRSI(h);
 
-  // 🔥 LONG
+  // 🔥 BREAKOUT LONG (BTC liebt das)
   if(
- //   ema20 > ema50 &&        // Trend up
-  //  price < ema20 &&        // über EMA
-    rsi < 48                // Rücksetzer!
+    ema20 > ema50 &&
+    price > ema20 &&
+    rsi > 55
   ){
     return "buy";
   }
 
-  // 🔥 SHORT
+  // 🔥 PULLBACK LONG
   if(
-   // ema20 < ema50 &&        // Trend down
-   // price > ema20 &&        // unter EMA
-    rsi > 52                // Rücksetzer!
+    ema20 > ema50 &&
+    price < ema20 &&
+    rsi < 45
+  ){
+    return "buy";
+  }
+
+  // 🔻 SHORT
+  if(
+    ema20 < ema50 &&
+    price > ema20 &&
+    rsi > 55
   ){
     return "short";
   }
-// ================= SMART MODE =================
+
+  return "hold";
+}// ================= SMART MODE =================
 function getEMA(prices, period){
   let k = 2/(period+1);
   let ema = prices[0];
@@ -236,9 +246,9 @@ if(user.portfolio[s]){
 
 
   if(
-    change > 0.01 ||      // Take Profit (+0.3%)
+    change > 0.015 ||      // Take Profit (+0.3%)
     change < -0.008 ||     // Stop Loss (-0.2%)
-    duration > 180000       // Max 60 Sekunden
+    duration >600000       // Max 60 Sekunden
   ){
 
     let invested = coin.entry * user.portfolio[s];
@@ -274,9 +284,9 @@ tradeLog.unshift("SELL " + s + " | " + gain.toFixed(2) + "$");
   let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
   if(
-    change > 0.01 ||      // Gewinn (+0.3%)
+    change > 0.015 ||      // Gewinn (+0.3%)
     change < -0.008 ||     // Stop Loss (-0.2%)
-    duration > 180000       // Max 60 Sekunden
+    duration > 600000       // Max 60 Sekunden
   ){
 
     let invested = coin.shortEntry * user.shorts[s];
@@ -336,7 +346,7 @@ let last = h[h.length-1];
 let prev = h[h.length-2];
 
 // ❌ nur extreme Seitwärtsphasen skippen
-if(market === "SIDE" && Math.abs(trendMove) < 0.0003) continue;
+//if(market === "SIDE" && Math.abs(trendMove) < 0.000) continue;
 
 // ❌ Bewegung minimal erhöhen
 //if(Math.abs(trendMove) < 0.0008) continue;
