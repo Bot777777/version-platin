@@ -421,7 +421,15 @@ app.get("/ip", (req,res)=>{
 });
 app.get("/candles/:symbol", async (req,res)=>{
   await fetchCandles(req.params.symbol);
-  res.json(coins[req.params.symbol].candles);
+res.json(
+  coins[req.params.symbol].candles.map(c => ({
+    time: c.time || Date.now(),   // 👈 DAS IST DER FIX
+    open: c.open,
+    high: c.high,
+    low: c.low,
+    close: c.close
+  }))
+);
 });
 
 app.post("/bot/start",(req,res)=>{
