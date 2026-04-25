@@ -156,7 +156,7 @@ function aiDecision(h){
   if(
     ema20 > ema50 &&
     price < ema20 &&
-    rsi < 40
+    rsi < 45
   ){
     return "buy";
   }
@@ -165,7 +165,7 @@ function aiDecision(h){
   if(
     ema20 < ema50 &&
     price > ema20 &&
-    rsi > 60
+    rsi > 55
   ){
     return "short";
   }
@@ -303,7 +303,7 @@ tradeLog.unshift("CLOSE SHORT " + s + " | " + gain.toFixed(2) + "$");
   let now = Date.now();
 
   if(!user.lastTrade) user.lastTrade = {};
-  if(user.lastTrade[s] && now - user.lastTrade[s] < 300000){
+  if(user.lastTrade[s] && now - user.lastTrade[s] < 60000){
     continue;
   }
 
@@ -323,7 +323,7 @@ let last = h[h.length-1];
 let prev = h[h.length-2];
 
 // ❌ nur extreme Seitwärtsphasen skippen
-if(market === "SIDE" && Math.abs(trendMove) < 0.0003) continue;
+// if(market === "SIDE" && Math.abs(trendMove) < 0.0003) continue;
 
 // ❌ Bewegung minimal erhöhen
 //if(Math.abs(trendMove) < 0.0008) continue;
@@ -346,7 +346,7 @@ if(decision==="buy" && !user.portfolio[s] && !user.shorts[s]){
   coin.entry = coin.price;
 coin.entryTime = Date.now();
   user.lastTrade[s] = now;
-tradeLog.unshift("SHORT "+s+" @ "+coin.price.toFixed(2));
+tradeLog.unshift("BUY "+s+" @ "+coin.price.toFixed(2));
   user.globalLastTrade = now;
 }
     // SHORT
