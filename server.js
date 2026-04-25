@@ -145,7 +145,7 @@ async function fetchCandles(symbol){
 // ================= AI =================
 function aiDecision(h){
 
-  if(h.length < 50) return "hold";
+  if(h.length < 20 ) return "hold";
 
   let ema20 = getEMA(h.slice(-20), 20);
   let ema50 = getEMA(h.slice(-50), 50);
@@ -156,7 +156,7 @@ function aiDecision(h){
   if(
     ema20 > ema50 &&
     price < ema20 &&
-    rsi < 45
+    rsi < 50
   ){
     return "buy";
   }
@@ -165,7 +165,7 @@ function aiDecision(h){
   if(
     ema20 < ema50 &&
     price > ema20 &&
-    rsi > 55
+    rsi > 50
   ){
     return "short";
   }
