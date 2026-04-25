@@ -169,33 +169,33 @@ function aiDecision(h){
 
   // 🔥 LONG
   if(
-    ema20 > ema50 &&        // Trend up
-    price < ema20 &&        // über EMA
+ //   ema20 > ema50 &&        // Trend up
+  //  price < ema20 &&        // über EMA
     rsi < 48                // Rücksetzer!
   ){
     return "buy";
   }
-if(
-  ema20 > ema50 &&
-  price > ema20 &&
-  rsi > 55
+//if(
+ // ema20 > ema50 &&
+ // price > ema20 &&
+  //rsi > 55
 ){
-  return "buy";
+//  return "buy";
 }
   // 🔥 SHORT
   if(
-    ema20 < ema50 &&        // Trend down
-    price > ema20 &&        // unter EMA
+   // ema20 < ema50 &&        // Trend down
+   // price > ema20 &&        // unter EMA
     rsi > 52                // Rücksetzer!
   ){
     return "short";
   }
-if(
-  ema20 < ema50 &&
-  price < ema20 &&
-  rsi < 45
+//if(
+//  ema20 < ema50 &&
+ // price < ema20 &&
+ // rsi < 45
 ){
-  return "short";
+ // return "short";
 }
   return "hold";
 
