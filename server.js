@@ -156,7 +156,7 @@ function aiDecision(h){
   if(
     ema20 > ema50 &&
     price < ema20 &&
-    rsi < 50
+    rsi < 40
   ){
     return "buy";
   }
@@ -165,7 +165,7 @@ function aiDecision(h){
   if(
     ema20 < ema50 &&
     price > ema20 &&
-    rsi > 50
+    rsi > 60
   ){
     return "short";
   }
