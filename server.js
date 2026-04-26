@@ -368,9 +368,9 @@ if(decision === "buy"){
 if(decision === "short"){
 // if(last < prev * 0.999) continue;
 }
-  let move = Math.abs((h[h.length-1] - h[h.length-5]) / h[h.length-5]);
+//  let move = Math.abs((h[h.length-1] - h[h.length-5]) / h[h.length-5]);
 
-if(move < 0.0001) continue;
+// if(move < 0.0001) continue;
   
   // BUY
   
