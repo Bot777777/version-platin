@@ -156,7 +156,7 @@ function getRSI(prices, period = 14){
 }
 
 function aiDecision(h){
-    if(h.length < 50) return "hold";
+    if(h.length < 30) return "hold";
 
     let ema20 = getEMA(h.slice(-20), 20);
     let ema50 = getEMA(h.slice(-50), 50);
@@ -167,7 +167,7 @@ function aiDecision(h){
     if(
         ema20 > ema50 &&
         price < ema20 &&
-        rsi < 40
+        rsi < 48
     ){
         return "buy";
     }
@@ -176,7 +176,7 @@ function aiDecision(h){
     if(
         ema20 < ema50 &&
         price > ema20 &&
-        rsi > 60
+        rsi > 52
     ){
         return "short";
     }
