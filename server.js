@@ -236,7 +236,7 @@ if(coin.price > coin.highest) coin.highest = coin.price;
 // 🚀 NEUES TRAILING (WICHTIG)
 let dropFromTop = (coin.highest - coin.price) / coin.highest;
 
-if(dropFromTop > 0.005){ // 1% vom Hoch gefallen
+if(dropFromTop > 0.003){ // 1% vom Hoch gefallen
     change = -1;
 }
   let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
@@ -244,8 +244,8 @@ if(dropFromTop > 0.005){ // 1% vom Hoch gefallen
 
 
   if(
-    change > 0.005 ||      // Take Profit (+0.3%)
-    change < -0.006 ||     // Stop Loss (-0.2%)
+    change > 0.015 ||      // Take Profit (+0.3%)
+    change < -0.009 ||     // Stop Loss (-0.2%)
     duration >300000       // Max 60 Sekunden
   ){
 
