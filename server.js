@@ -424,7 +424,7 @@ app.get("/candles/:symbol", async (req,res)=>{
 res.json(
 coins[req.params.symbol].candles.map((c, i) => ({
   time: Math.floor(
-    (Date.now() - (coins[req.params.symbol].candles.length - i) * 60000),
+    (Date.now() - (coins[req.params.symbol].candles.length - i) * 3600000),
     ),
   open: c.open,
   high: c.high,
