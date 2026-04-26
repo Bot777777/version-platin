@@ -156,41 +156,32 @@ function getRSI(prices, period = 14){
 }
 
 function aiDecision(h){
-  if(h.length < 50) return "hold";
+    if(h.length < 50) return "hold";
 
-  let ema20 = getEMA(h.slice(-20), 20);
-  let ema50 = getEMA(h.slice(-50), 50);
-  let price = h[h.length - 1];
-  let rsi = getRSI(h);
+    let ema20 = getEMA(h.slice(-20), 20);
+    let ema50 = getEMA(h.slice(-50), 50);
+    let price = h[h.length - 1];
+    let rsi = getRSI(h);
 
-  // 🔥 BREAKOUT LONG (BTC liebt das)
-  if(
-    ema20 > ema50 &&
-    price > ema20 &&
-    rsi > 55
-  ){
-    return "buy";
-  }
+    // 🔥 LONG (Trend + Pullback)
+    if(
+        ema20 > ema50 &&
+        price < ema20 &&
+        rsi < 45
+    ){
+        return "buy";
+    }
 
-  // 🔥 PULLBACK LONG
-  if(
-    ema20 > ema50 &&
-    price < ema20 &&
-    rsi < 45
-  ){
-    return "buy";
-  }
+    // 🔥 SHORT (Trend + Pullback)
+    if(
+        ema20 < ema50 &&
+        price > ema20 &&
+        rsi > 55
+    ){
+        return "short";
+    }
 
-  // 🔻 SHORT
-  if(
-    ema20 < ema50 &&
-    price > ema20 &&
-    rsi > 55
-  ){
-    return "short";
-  }
-
-  return "hold";
+    return "hold";
 }// ================= SMART MODE =================
 function getEMA(prices, period){
   let k = 2/(period+1);
@@ -243,7 +234,7 @@ if(user.portfolio[s]){
 if(coin.price > coin.highest) coin.highest = coin.price;
 
 // Trailing Stop
-if(coin.price < coin.highest * 0.997){
+if(coin.price < coin.highest * 0.995){
   // erzwinge Exit
   change = -1;
 }
@@ -252,9 +243,9 @@ if(coin.price < coin.highest * 0.997){
 
 
   if(
-    change > 0.015 ||      // Take Profit (+0.3%)
-    change < -0.015 ||     // Stop Loss (-0.2%)
-    duration >60000       // Max 60 Sekunden
+    change > 0.004 ||      // Take Profit (+0.3%)
+    change < -0.006 ||     // Stop Loss (-0.2%)
+    duration >180000       // Max 60 Sekunden
   ){
 
     let invested = coin.entry * user.portfolio[s];
@@ -286,15 +277,25 @@ tradeLog.unshift("SELL " + s + " | " + gain.toFixed(2) + "$");
 }  // SHORT EXIT
   if(user.shorts[s]){
 
-  let change = (coin.shortEntry - coin.price) / coin.shortEntry;
-  let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
+ let change = (coin.shortEntry - coin.price) / coin.shortEntry;
 
-  if(
-    change > 0.015 ||      // Gewinn (+0.3%)
-    change < -0.015 ||     // Stop Loss (-0.2%)
-    duration > 60000       // Max 60 Sekunden
-  ){
+// 🔥 Trailing Low (NEU)
+if(!coin.lowest) coin.lowest = coin.shortEntry;
+if(coin.price < coin.lowest) coin.lowest = coin.price;
 
+// 🔥 Trailing Stop
+if(coin.price > coin.lowest * 1.005){
+    change = -1;
+}
+
+let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
+
+if(
+    change > 0.004 ||     // +0.4% Gewinn
+    change < -0.006 ||    // -0.6% Verlust
+    duration > 180000     // 3 Minuten
+){
+  
     let invested = coin.shortEntry * user.shorts[s];
     let returned = coin.price * user.shorts[s];
     let fee = returned * FEE;
@@ -319,6 +320,7 @@ tradeLog.unshift("CLOSE SHORT " + s + " | " + gain.toFixed(2) + "$");
     user.stats.trades++;
     if(gain > 0) user.stats.wins++;
     user.lastTrade[s] = Date.now();
+  coin.lowest = null;
     continue;
   }
 } // ================= LIMIT NACH EXIT =================
