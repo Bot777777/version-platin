@@ -167,7 +167,7 @@ function aiDecision(h){
     if(
         ema20 > ema50 &&
         price < ema20 &&
-        rsi < 45
+        rsi < 40
     ){
         return "buy";
     }
@@ -176,7 +176,7 @@ function aiDecision(h){
     if(
         ema20 < ema50 &&
         price > ema20 &&
-        rsi > 55
+        rsi > 60
     ){
         return "short";
     }
@@ -243,9 +243,9 @@ if(coin.price < coin.highest * 0.995){
 
 
   if(
-    change > 0.004 ||      // Take Profit (+0.3%)
+    change > 0.008 ||      // Take Profit (+0.3%)
     change < -0.006 ||     // Stop Loss (-0.2%)
-    duration >180000       // Max 60 Sekunden
+    duration >900000       // Max 60 Sekunden
   ){
 
     let invested = coin.entry * user.portfolio[s];
@@ -291,9 +291,9 @@ if(coin.price > coin.lowest * 1.005){
 let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
 if(
-    change > 0.004 ||     // +0.4% Gewinn
+    change > 0.008 ||     // +0.4% Gewinn
     change < -0.006 ||    // -0.6% Verlust
-    duration > 180000     // 3 Minuten
+    duration > 900000     // 3 Minuten
 ){
   
     let invested = coin.shortEntry * user.shorts[s];
