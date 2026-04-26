@@ -233,10 +233,11 @@ if(user.portfolio[s]){
   if(!coin.highest) coin.highest = coin.entry;
 if(coin.price > coin.highest) coin.highest = coin.price;
 
-// Trailing Stop
-if(coin.price < coin.highest * 0.995){
-  // erzwinge Exit
-  change = -1;
+// 🚀 NEUES TRAILING (WICHTIG)
+let dropFromTop = (coin.highest - coin.price) / coin.highest;
+
+if(dropFromTop > 0.005){ // 1% vom Hoch gefallen
+    change = -1;
 }
   let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
@@ -268,7 +269,8 @@ tradeLog.unshift("SELL " + s + " | " + gain.toFixed(2) + "$");
     user.portfolio[s] = 0;
     coin.entry = null;
     coin.entryTime = null;
-
+    coin.highest = null;
+    
     user.stats.trades++;
     if(gain > 0) user.stats.wins++;
     user.lastTrade[s] = Date.now();
@@ -283,11 +285,13 @@ tradeLog.unshift("SELL " + s + " | " + gain.toFixed(2) + "$");
 if(!coin.lowest) coin.lowest = coin.shortEntry;
 if(coin.price < coin.lowest) coin.lowest = coin.price;
 
-// 🔥 Trailing Stop
-if(coin.price > coin.lowest * 1.005){
+// 🚀 NEUES SHORT TRAILING
+let riseFromBottom = (coin.price - coin.lowest) / coin.lowest;
+
+if(riseFromBottom > 0.005){ // 1% vom Tief gestiegen
     change = -1;
 }
-
+    
 let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
 if(
@@ -316,7 +320,8 @@ tradeLog.unshift("CLOSE SHORT " + s + " | " + gain.toFixed(2) + "$");
     user.shorts[s] = 0;
     coin.shortEntry = null;
     coin.entryTime = null;
-
+    coin.lowest = null;
+  
     user.stats.trades++;
     if(gain > 0) user.stats.wins++;
     user.lastTrade[s] = Date.now();
@@ -381,6 +386,7 @@ if(decision==="buy" && !user.portfolio[s] && !user.shorts[s]){
   user.portfolio[s] = amount; // ✅ WICHTIG
   coin.entry = coin.price;
 coin.entryTime = Date.now();
+  coin.highest = coin.price;
   user.lastTrade[s] = now;
 tradeLog.unshift("BUY " + s + " @ " + coin.price.toFixed(2));
   user.globalLastTrade = now;
@@ -394,6 +400,7 @@ if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
   user.shorts[s] = amount;
   coin.shortEntry = coin.price;
 coin.entryTime = Date.now();
+  coin.lowest = coin.price;
   user.lastTrade[s] = now;
 tradeLog.unshift("SHORT " + s + " @ " + coin.price.toFixed(2));
   user.globalLastTrade = now;
