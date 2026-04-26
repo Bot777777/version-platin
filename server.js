@@ -166,7 +166,7 @@ function aiDecision(h){
     // 🔥 LONG (Trend + Pullback)
     if(
         ema20 > ema50 &&
-        price < ema20 &&
+        price < ema20 * 0.997 &&
         rsi < 42
     ){
         return "buy";
@@ -175,7 +175,7 @@ function aiDecision(h){
     // 🔥 SHORT (Trend + Pullback)
     if(
         ema20 < ema50 &&
-        price > ema20 &&
+        price > ema20 * 1.003 &&
         rsi > 58
     ){
         return "short";
