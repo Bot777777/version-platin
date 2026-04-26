@@ -362,7 +362,7 @@ let prev = h[h.length-2];
 //if(market === "SIDE" && Math.abs(trendMove) < 0.000) continue;
 
  //❌ Bewegung minimal erhöhen
-if(Math.abs(trendMove) < 0.0009) continue;
+if(Math.abs(trendMove) < 0.0003) continue;
 
 // ❌ LONG nur leichter Rücksetzer
 if(decision === "buy"){
