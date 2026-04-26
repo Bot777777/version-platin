@@ -252,9 +252,9 @@ if(coin.price < coin.highest * 0.997){
 
 
   if(
-    change > 0.01 ||      // Take Profit (+0.3%)
-    change < -0.005 ||     // Stop Loss (-0.2%)
-    duration >600000       // Max 60 Sekunden
+    change > 0.015 ||      // Take Profit (+0.3%)
+    change < -0.015 ||     // Stop Loss (-0.2%)
+    duration >60000       // Max 60 Sekunden
   ){
 
     let invested = coin.entry * user.portfolio[s];
@@ -290,9 +290,9 @@ tradeLog.unshift("SELL " + s + " | " + gain.toFixed(2) + "$");
   let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
   if(
-    change > 0.02 ||      // Gewinn (+0.3%)
-    change < -0.01 ||     // Stop Loss (-0.2%)
-    duration > 600000       // Max 60 Sekunden
+    change > 0.015 ||      // Gewinn (+0.3%)
+    change < -0.015 ||     // Stop Loss (-0.2%)
+    duration > 60000       // Max 60 Sekunden
   ){
 
     let invested = coin.shortEntry * user.shorts[s];
@@ -332,7 +332,7 @@ tradeLog.unshift("CLOSE SHORT " + s + " | " + gain.toFixed(2) + "$");
   let now = Date.now();
 
   if(!user.lastTrade) user.lastTrade = {};
-  if(user.lastTrade[s] && now - user.lastTrade[s] <30000){
+  if(user.lastTrade[s] && now - user.lastTrade[s] <20000){
     continue;
   }
 
@@ -422,13 +422,13 @@ app.get("/ip", (req,res)=>{
 app.get("/candles/:symbol", async (req,res)=>{
   await fetchCandles(req.params.symbol);
 res.json(
-  coins[req.params.symbol].candles.map(c => ({
-    time: c.time || Date.now(),   // 👈 DAS IST DER FIX
-    open: c.open,
-    high: c.high,
-    low: c.low,
-    close: c.close
-  }))
+coins[req.params.symbol].candles.map((c, i) => ({
+  time: c.time || (Date.now() - (coins[req.params.symbol].candles.length - i) * 60000),
+  open: c.open,
+  high: c.high,
+  low: c.low,
+  close: c.close
+}))
 );
 });
 
