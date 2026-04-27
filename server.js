@@ -244,8 +244,8 @@ if(dropFromTop > 0.0025){ // 1% vom Hoch gefallen
 
 
   if(
-    change > 0.02 ||      // Take Profit (+0.3%)
-    change < -0.009 ||     // Stop Loss (-0.2%)
+    change > 0.005 ||      // Take Profit (+0.3%)
+    change < -0.004 ||     // Stop Loss (-0.2%)
     duration >600000       // Max 60 Sekunden
   ){
 
@@ -295,8 +295,8 @@ if(riseFromBottom > 0.005){ // 1% vom Tief gestiegen
 let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
 if(
-    change > 0.02 ||     // +0.4% Gewinn
-    change < -0.006 ||    // -0.6% Verlust
+    change > 0.005 ||     // +0.4% Gewinn
+    change < -0.004 ||    // -0.6% Verlust
     duration > 600000     // 3 Minuten
 ){
   
