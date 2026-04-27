@@ -166,7 +166,7 @@ function aiDecision(h){
     // 🔥 LONG (Trend + Pullback)
     if(
         ema20 > ema50 &&
-        price < ema20 * 1.0002 &&
+        price < ema20 * 1.0003 &&
         rsi < 48
     ){
         return "buy";
@@ -175,7 +175,7 @@ function aiDecision(h){
     // 🔥 SHORT (Trend + Pullback)
     if(
         ema20 < ema50 &&
-        price > ema20 * 0.9998 &&
+        price > ema20 * 0.9997 &&
         rsi > 52
     ){
         return "short";
@@ -236,7 +236,7 @@ if(coin.price > coin.highest) coin.highest = coin.price;
 // 🚀 NEUES TRAILING (WICHTIG)
 let dropFromTop = (coin.highest - coin.price) / coin.highest;
 
-if(dropFromTop > 0.0015){ // 1% vom Hoch gefallen
+if(dropFromTop > 0.0025){ // 1% vom Hoch gefallen
     change = -1;
 }
   let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
@@ -244,7 +244,7 @@ if(dropFromTop > 0.0015){ // 1% vom Hoch gefallen
 
 
   if(
-    change > 0.015 ||      // Take Profit (+0.3%)
+    change > 0.02 ||      // Take Profit (+0.3%)
     change < -0.009 ||     // Stop Loss (-0.2%)
     duration >600000       // Max 60 Sekunden
   ){
@@ -295,7 +295,7 @@ if(riseFromBottom > 0.005){ // 1% vom Tief gestiegen
 let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
 if(
-    change > 0.01 ||     // +0.4% Gewinn
+    change > 0.02 ||     // +0.4% Gewinn
     change < -0.006 ||    // -0.6% Verlust
     duration > 600000     // 3 Minuten
 ){
