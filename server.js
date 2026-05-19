@@ -162,27 +162,33 @@ function aiDecision(h){
     let ema50 = getEMA(h.slice(-50), 50);
     let price = h[h.length - 1];
     let rsi = getRSI(h);
+let prev = h[h.length - 2];
+let prev2 = h[h.length - 3];
 
-    // 🔥 LONG (Trend + Pullback)
-    if(
-        ema20 > ema50 &&
-        price < ema20 * 0.9995 &&
-        rsi < 48
-    ){
-        return "buy";
-    }
 
-    // 🔥 SHORT (Trend + Pullback)
-    if(
-        ema20 < ema50 &&
-        price > ema20 * 1.0005 &&
-        rsi > 52
-    ){
-        return "short";
-    }
+// 🔥 LONG MOMENTUM REVERSAL
+if(
+    ema20 > ema50 &&
+    prev2 > prev &&
+    prev < price &&
+    price < ema20 &&
+    rsi < 45
+){
+    return "buy";
+}
 
-    return "hold";
-}// ================= SMART MODE =================
+
+// 🔥 SHORT MOMENTUM REVERSAL
+if(
+    ema20 < ema50 &&
+    prev2 < prev &&
+    prev > price &&
+    price > ema20 &&
+    rsi > 55
+){
+    return "short";
+}  
+// ================= SMART MODE =================
 function getEMA(prices, period){
   let k = 2/(period+1);
   let ema = prices[0];
@@ -244,8 +250,8 @@ if(dropFromTop > 0.004){ // 1% vom Hoch gefallen
 
 
   if(
-    change > 0.007 ||      // Take Profit (+0.3%)
-    change < -0.002 ||     // Stop Loss (-0.2%)
+    change > 0.0035 ||      // Take Profit (+0.3%)
+    change < -0.0018 ||     // Stop Loss (-0.2%)
     duration >600000       // Max 60 Sekunden
   ){
 
@@ -295,8 +301,8 @@ if(riseFromBottom > 0.005){ // 1% vom Tief gestiegen
 let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
 if(
-    change > 0.005 ||     // +0.4% Gewinn
-    change < -0.004 ||    // -0.6% Verlust
+    change > 0.0035 ||     // +0.4% Gewinn
+    change < -0.0018 ||    // -0.6% Verlust
     duration > 600000     // 3 Minuten
 ){
   
