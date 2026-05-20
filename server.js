@@ -183,7 +183,7 @@ if(
     ema20 < ema50 &&
     prev2 < prev &&
     prev > price &&
-    price < prev * 0.9995 ema20 &&
+    price < prev * 0.9995 &&
     rsi > 50
 ){
     return "short";
