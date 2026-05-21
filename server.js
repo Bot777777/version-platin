@@ -40,7 +40,7 @@ let symbols = [
   "BTCUSDT",
   "ETHUSDT",
   "SOLUSDT",
-//  "XRPUSDT",
+  "XRPUSDT",
 
 
 
@@ -171,7 +171,7 @@ if(
     ema20 > ema50 &&
    price > prev &&
     prev > prev2 &&
-    rsi > 50
+    rsi > 51,5
 ){
     return "buy";
 }
@@ -182,7 +182,7 @@ if(
     ema20 < ema50 &&
     price < prev &&
     prev < prev2 &&
-    rsi < 50
+    rsi < 48.5
 ){
     return "short";
 }  
@@ -242,7 +242,7 @@ if(coin.price > coin.highest) coin.highest = coin.price;
 // 🚀 NEUES TRAILING (WICHTIG)
 let dropFromTop = (coin.highest - coin.price) / coin.highest;
 
-if(dropFromTop > 0.004){ // 1% vom Hoch gefallen
+if(dropFromTop > 0.001){ // 1% vom Hoch gefallen
     change = -1;
 }
   let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
@@ -253,7 +253,7 @@ if(
     (coin.safeProfit && change < 0.0003) ||
     change > 0.0035 ||       // Take Profit (+0.3%)
     change < -0.0018 ||     // Stop Loss (-0.2%)
-    duration >600000       // Max 60 Sekunden
+    duration >1800000       // Max 60 Sekunden
   ){
 
     let invested = coin.entry * user.portfolio[s];
@@ -298,7 +298,7 @@ if(coin.price < coin.lowest) coin.lowest = coin.price;
 // 🚀 NEUES SHORT TRAILING
 let riseFromBottom = (coin.price - coin.lowest) / coin.lowest;
 
-if(riseFromBottom > 0.005){ // 1% vom Tief gestiegen
+if(riseFromBottom > 0.002){ // 1% vom Tief gestiegen
     change = -1;
 }
     
@@ -308,7 +308,7 @@ if(
     (coin.safeProfit && change < 0.0003) ||
     change > 0.0035 ||      // +0.4% Gewinn
     change < -0.0018 ||    // -0.6% Verlust
-    duration > 600000     // 3 Minuten
+    duration > 60000     // 3 Minuten
 ){
   
     let invested = coin.shortEntry * user.shorts[s];
@@ -350,7 +350,7 @@ tradeLog.unshift("CLOSE SHORT " + s + " | " + gain.toFixed(2) + "$");
   let now = Date.now();
 
   if(!user.lastTrade) user.lastTrade = {};
-  if(user.lastTrade[s] && now - user.lastTrade[s] <120000){
+  if(user.lastTrade[s] && now - user.lastTrade[s] <30000){
     continue;
   }
 
