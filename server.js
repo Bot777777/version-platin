@@ -30,7 +30,7 @@ let user = {
     trades: 0,
     wins: 0
   },
-  maxOpenTrades: 3,
+  maxOpenTrades: 8,
   loggedIn: false
 };
 let botRunning = true;
@@ -242,7 +242,7 @@ if(coin.price > coin.highest) coin.highest = coin.price;
 // 🚀 NEUES TRAILING (WICHTIG)
 let dropFromTop = (coin.highest - coin.price) / coin.highest;
 
-if(dropFromTop > 0.001){ // 1% vom Hoch gefallen
+if(dropFromTop > 0.004){ // 1% vom Hoch gefallen
     change = -1;
 }
   let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
@@ -298,7 +298,7 @@ if(coin.price < coin.lowest) coin.lowest = coin.price;
 // 🚀 NEUES SHORT TRAILING
 let riseFromBottom = (coin.price - coin.lowest) / coin.lowest;
 
-if(riseFromBottom > 0.002){ // 1% vom Tief gestiegen
+if(riseFromBottom > 0.005){ // 1% vom Tief gestiegen
     change = -1;
 }
     
