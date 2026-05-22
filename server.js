@@ -233,7 +233,7 @@ for(let s of symbols){
 if(user.portfolio[s]){
 
   let change = (coin.price - coin.entry)/coin.entry;
-if(change > 0.0009){
+if(change > 0.0008){
     coin.safeProfit = true;
 }
   if(!coin.highest) coin.highest = coin.entry;
@@ -242,7 +242,7 @@ if(coin.price > coin.highest) coin.highest = coin.price;
 // 🚀 NEUES TRAILING (WICHTIG)
 let dropFromTop = (coin.highest - coin.price) / coin.highest;
 
-if(dropFromTop > 0.04){ // 1% vom Hoch gefallen
+if(dropFromTop > 0.004){ // 1% vom Hoch gefallen
     change = -1;
 }
   let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
@@ -251,7 +251,7 @@ if(dropFromTop > 0.04){ // 1% vom Hoch gefallen
 
 if(
     (coin.safeProfit && change < 0.0003) ||
-    change > 0.0035 ||       // Take Profit (+0.3%)
+    change > 0.0033 ||       // Take Profit (+0.3%)
     change < -0.00258 ||     // Stop Loss (-0.2%)
     duration >1800000       // Max 60 Sekunden
   ){
@@ -287,7 +287,7 @@ tradeLog.unshift("SELL " + s + " | " + gain.toFixed(2) + "$");
   if(user.shorts[s]){
 
  let change = (coin.shortEntry - coin.price) / coin.shortEntry;
-if(change > 0.008){
+if(change > 0.0085){
     coin.safeProfit = true;
 }  
     // 🔥 Trailing Low (NEU)
@@ -298,7 +298,7 @@ if(coin.price < coin.lowest) coin.lowest = coin.price;
 // 🚀 NEUES SHORT TRAILING
 let riseFromBottom = (coin.price - coin.lowest) / coin.lowest;
 
-if(riseFromBottom > 0.005){ // 1% vom Tief gestiegen
+if(riseFromBottom > 0.008){ // 1% vom Tief gestiegen
     change = -1;
 }
     
@@ -306,7 +306,7 @@ let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
 if(
     (coin.safeProfit && change < 0.0003) ||
-    change > 0.0035 ||      // +0.4% Gewinn
+    change > 0.0033 ||      // +0.4% Gewinn
     change < -0.0025 ||    // -0.6% Verlust
     duration > 1800000     // 3 Minuten
 ){
