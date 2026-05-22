@@ -30,7 +30,7 @@ let user = {
     trades: 0,
     wins: 0
   },
-  maxOpenTrades: 8,
+  maxOpenTrades: 3,
   loggedIn: false
 };
 let botRunning = true;
@@ -39,8 +39,8 @@ let botRunning = true;
 let symbols = [
   "BTCUSDT",
   "ETHUSDT",
-  "SOLUSDT",
-  "XRPUSDT",
+  "SOLUSDT", 
+  // "XRPUSDT",
 
 
 
@@ -171,7 +171,7 @@ if(
     ema20 > ema50 &&
    price > prev &&
     prev > prev2 &&
-    rsi > 51,5
+    rsi > 52
 ){
     return "buy";
 }
@@ -182,7 +182,7 @@ if(
     ema20 < ema50 &&
     price < prev &&
     prev < prev2 &&
-    rsi < 48.5
+    rsi < 48
 ){
     return "short";
 }  
@@ -350,7 +350,7 @@ tradeLog.unshift("CLOSE SHORT " + s + " | " + gain.toFixed(2) + "$");
   let now = Date.now();
 
   if(!user.lastTrade) user.lastTrade = {};
-  if(user.lastTrade[s] && now - user.lastTrade[s] <30000){
+  if(user.lastTrade[s] && now - user.lastTrade[s] <60000){
     continue;
   }
 
