@@ -174,7 +174,7 @@ let prev2 = h[h.length - 3];
 if(
     ema20 > ema50 &&
    price > prev &&
-    prev > prev2 &&
+    prev < prev2 &&
     rsi > 48
 ){
     return "buy";
@@ -185,8 +185,8 @@ if(
 if(
     ema20 < ema50 &&
     price < prev &&
-    prev < prev2 &&
-    rsi <50
+    prev > prev2 &&
+    rsi < 48
 ){
     return "short";
 }  
