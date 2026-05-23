@@ -285,7 +285,7 @@ tradeLog.unshift("SELL " + s + " | " + gain.toFixed(2) + "$");
   }
 }  // SHORT EXIT
   if(user.shorts[s]){
-  }
+  
  let change = (coin.shortEntry - coin.price) / coin.shortEntry;
 if(change > 0.0085){
     coin.safeProfit = true;
@@ -373,7 +373,7 @@ let prev = h[h.length-2];
 //  if(market === "SIDE" && Math.abs(trendMove) < 0.000) continue;
 
   //   ❌ Bewegung minimal erhöhen
-//. if(Math.abs(trendMove) < 0.000001) continue;
+//   .if(Math.abs(trendMove) < 0.000001) continue;
 
   //   ❌ LONG nur leichter Rücksetzer
 //  if(decision === "buy"){
