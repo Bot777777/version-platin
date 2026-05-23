@@ -45,8 +45,8 @@ let symbols = [
   "ARBUSDT",
   "TRXUSDT",
   "BNBUSDT",
-  "PEPEUSDT"
-  "BITCOIN"
+  "PEPEUSDT",
+  "BITCOIN",
   "TRON",
   ];
 let coins = {};
