@@ -369,18 +369,18 @@ tradeLog.unshift("CLOSE SHORT " + s + " | " + gain.toFixed(2) + "$");
 let last = h[h.length-1];
 let prev = h[h.length-2];
 
-❌ nur extreme Seitwärtsphasen skippen
+  //   ❌ nur extreme Seitwärtsphasen skippen
 if(market === "SIDE" && Math.abs(trendMove) < 0.0001) continue;
 
-❌ Bewegung minimal erhöhen
+  //   ❌ Bewegung minimal erhöhen
 if(Math.abs(trendMove) < 0.000001) continue;
 
- ❌ LONG nur leichter Rücksetzer
+  //   ❌ LONG nur leichter Rücksetzer
 if(decision === "buy"){
 if(last > prev * 1.001) continue;
 }
 
-// ❌ SHORT nur leichter Rücksetzer
+//     ❌ SHORT nur leichter Rücksetzer
 if(decision === "short"){
  if(last < prev * 0.999) continue;
 }
