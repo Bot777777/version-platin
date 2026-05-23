@@ -45,9 +45,9 @@ let symbols = [
   "ARBUSDT",
   "TRXUSDT",
   "BNBUSDT",
-  "PEPEUSDT",
-  "BITCOIN",
-  "TRON",
+ 
+
+ 
   ];
 let coins = {};
 symbols.forEach(s=>{
