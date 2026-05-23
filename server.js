@@ -30,7 +30,7 @@ let user = {
     trades: 0,
     wins: 0
   },
-  maxOpenTrades: 3,
+  maxOpenTrades: 8,
   loggedIn: false
 };
 let botRunning = true;
