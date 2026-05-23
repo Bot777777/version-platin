@@ -182,7 +182,7 @@ if(
     ema20 < ema50 &&
     price < prev &&
     prev < prev2 &&
-    rsi < 48
+    rsi < 50
 ){
     return "short";
 }  
@@ -253,7 +253,7 @@ if(
     (coin.safeProfit && change < 0.0003) ||
     change > 0.0033 ||       // Take Profit (+0.3%)
     change < -0.00258 ||     // Stop Loss (-0.2%)
-    duration >1800000       // Max 60 Sekunden
+    duration >2400000       // Max 60 Sekunden
   ){
 
     let invested = coin.entry * user.portfolio[s];
@@ -308,7 +308,7 @@ if(
     (coin.safeProfit && change < 0.0003) ||
     change > 0.0033 ||      // +0.4% Gewinn
     change < -0.0025 ||    // -0.6% Verlust
-    duration > 1800000     // 3 Minuten
+    duration > 2400000     // 3 Minuten
 ){
   
     let invested = coin.shortEntry * user.shorts[s];
@@ -369,20 +369,20 @@ tradeLog.unshift("CLOSE SHORT " + s + " | " + gain.toFixed(2) + "$");
 let last = h[h.length-1];
 let prev = h[h.length-2];
 
-// ❌ nur extreme Seitwärtsphasen skippen
-//if(market === "SIDE" && Math.abs(trendMove) < 0.000) continue;
+❌ nur extreme Seitwärtsphasen skippen
+if(market === "SIDE" && Math.abs(trendMove) < 0.0001) continue;
 
- //❌ Bewegung minimal erhöhen
-//if(Math.abs(trendMove) < 0.000001) continue;
+❌ Bewegung minimal erhöhen
+if(Math.abs(trendMove) < 0.000001) continue;
 
-// ❌ LONG nur leichter Rücksetzer
+ ❌ LONG nur leichter Rücksetzer
 if(decision === "buy"){
- // if(last > prev * 1.001) continue;
+if(last > prev * 1.001) continue;
 }
 
 // ❌ SHORT nur leichter Rücksetzer
 if(decision === "short"){
-// if(last < prev * 0.999) continue;
+ if(last < prev * 0.999) continue;
 }
 //  let move = Math.abs((h[h.length-1] - h[h.length-5]) / h[h.length-5]);
 
