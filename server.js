@@ -182,7 +182,7 @@ if(
     ema20 < ema50 &&
     price < prev &&
     prev < prev2 &&
-    rsi < 50
+    rsi < 48
 ){
     return "short";
 }  
@@ -251,8 +251,8 @@ if(dropFromTop > 0.004){ // 1% vom Hoch gefallen
 
 if(
     (coin.safeProfit && change < 0.0003) ||
-    change > 0.0033 ||       // Take Profit (+0.3%)
-    change < -0.00258 ||     // Stop Loss (-0.2%)
+    change > 0.003 ||       // Take Profit (+0.3%)
+    change < -0.0025 ||     // Stop Loss (-0.2%)
     duration >2400000       // Max 60 Sekunden
   ){
 
@@ -306,9 +306,9 @@ let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 
 if(
     (coin.safeProfit && change < 0.0003) ||
-    change > 0.0033 ||      // +0.4% Gewinn
+    change > 0.003 ||      // +0.4% Gewinn
     change < -0.0025 ||    // -0.6% Verlust
-    duration > 2400000     // 3 Minuten
+    duration > 1800000     // 3 Minuten
 ){
   
     let invested = coin.shortEntry * user.shorts[s];
