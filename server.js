@@ -285,7 +285,7 @@ tradeLog.unshift("SELL " + s + " | " + gain.toFixed(2) + "$");
   }
 }  // SHORT EXIT
   if(user.shorts[s]){
-
+  }
  let change = (coin.shortEntry - coin.price) / coin.shortEntry;
 if(change > 0.0085){
     coin.safeProfit = true;
