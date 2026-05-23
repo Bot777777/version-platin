@@ -40,10 +40,14 @@ let symbols = [
   "BTCUSDT",
   "ETHUSDT",
   "SOLUSDT", 
-  // "XRPUSDT",
-
-
-
+  "XRPUSDT",
+  "LINKUSDT",
+  "ARBUSDT",
+  "TRXUSDT",
+  "BNBUSDT",
+  "PEPEUSDT"
+  "BITCOIN"
+  "TRON",
   ];
 let coins = {};
 symbols.forEach(s=>{
