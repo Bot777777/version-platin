@@ -378,12 +378,11 @@ let prev = h[h.length-2];
   //   ❌ LONG nur leichter Rücksetzer
 //  if(decision === "buy"){
 // .if(last > prev * 1.001) continue;
-}
+
 
 //     ❌ SHORT nur leichter Rücksetzer
  // if(decision === "short"){
-//  if(last < prev * 0.999) continue;
-}
+//  if(last < prev * 0.999) continue;}
 //  let move = Math.abs((h[h.length-1] - h[h.length-5]) / h[h.length-5]);
 
 // if(move < 0.0001) continue;
