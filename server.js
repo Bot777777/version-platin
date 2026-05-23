@@ -370,14 +370,14 @@ let last = h[h.length-1];
 let prev = h[h.length-2];
 
   //   ❌ nur extreme Seitwärtsphasen skippen
-if(market === "SIDE" && Math.abs(trendMove) < 0.0001) continue;
+//if(market === "SIDE" && Math.abs(trendMove) < 0.000) continue;
 
   //   ❌ Bewegung minimal erhöhen
-if(Math.abs(trendMove) < 0.000001) continue;
+//if(Math.abs(trendMove) < 0.000001) continue;
 
   //   ❌ LONG nur leichter Rücksetzer
-if(decision === "buy"){
-if(last > prev * 1.001) continue;
+//if(decision === "buy"){
+//if(last > prev * 1.001) continue;
 }
 
 //     ❌ SHORT nur leichter Rücksetzer
