@@ -175,7 +175,7 @@ if(
     ema20 > ema50 &&
    price > prev &&
     prev > prev2 &&
-    rsi > 52
+    rsi > 50
 ){
     return "buy";
 }
@@ -186,7 +186,7 @@ if(
     ema20 > ema50 &&
     price > prev &&
     prev > prev2 &&
-    rsi > 48
+    rsi < 48
 ){
     return "short";
 }  
