@@ -175,7 +175,7 @@ if(
     ema20 > ema50 &&
    price > prev &&
     prev > prev2 &&
-    rsi > 50
+    rsi > 52
 ){
     return "buy";
 }
@@ -183,10 +183,10 @@ if(
 
 // 🔥 SHORT MOMENTUM REVERSAL
 if(
-    ema20 > ema50 &&
+    ema20 < ema50 &&
     price > prev &&
     prev > prev2 &&
-    rsi < 48
+    rsi < 49
 ){
     return "short";
 }  
