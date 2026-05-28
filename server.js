@@ -172,10 +172,10 @@ let prev2 = h[h.length - 3];
 
 // 🔥 LONG MOMENTUM REVERSAL
 if(
-    ema20 < ema50 &&
-   price < prev &&
-    prev < prev2 &&
-    rsi < 50
+    ema20 > ema50 &&
+   price > prev &&
+    prev > prev2 &&
+    rsi > 50
 ){
     return "buy";
 }
@@ -184,9 +184,9 @@ if(
 // 🔥 SHORT MOMENTUM REVERSAL
 if(
     ema20  < ema50 &&
-    price = < prev &&
-    prev = < prev2 &&
-    rsi = < 48
+    price  < prev &&
+    prev  < prev2 &&
+    rsi  <  50
 ){
     return "short";
 }  
