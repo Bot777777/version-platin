@@ -393,7 +393,7 @@ let prev = h[h.length-2];
   
   // BUY
   
-if(decision==="buy" && !user.portfolio[s] && !user.portfolio[s]){
+if(decision==="buy" && !user.portfolio[s] && !user.shorts[s]){
   let amount = TRADE_SIZE / coin.price;
   user.balance -= TRADE_SIZE;
 
@@ -407,7 +407,7 @@ tradeLog.unshift("BUY " + s + " @ " + coin.price.toFixed(2));
 }
     // SHORT
   
-if(decision==="short" && !user.shorts[s] && !user.shorts[s]){
+if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
   let amount = TRADE_SIZE / coin.price;
   user.balance -= TRADE_SIZE;
 
