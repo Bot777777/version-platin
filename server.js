@@ -175,7 +175,7 @@ if(
     ema20 > ema50 &&
    price > prev &&
     prev > prev2 &&
-    rsi > 51
+    rsi > 50
 ){
     return "buy";
 }
@@ -311,7 +311,7 @@ let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 if(
     (coin.safeProfit && change < 0.0003) ||
     change > 0.003 ||      // +0.4% Gewinn
-    change < -0.004 ||    // -0.6% Verlust
+    change < -0.0025 ||    // -0.6% Verlust
     duration > 2400000     // 3 Minuten
 ){
   
