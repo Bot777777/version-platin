@@ -175,7 +175,7 @@ if(
     ema20 > ema50 &&
    price > prev &&
     prev > prev2 &&
-    rsi > 50
+    rsi < 50
 ){
     return "buy";
 }
