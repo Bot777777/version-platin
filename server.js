@@ -42,7 +42,7 @@ let symbols = [
   "SOLUSDT", 
   "XRPUSDT",
   "LINKUSDT",
-  "ARBUSDT",
+//  "ARBUSDT",
   "TRXUSDT",
   "BNBUSDT",
  
