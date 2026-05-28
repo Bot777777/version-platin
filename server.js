@@ -183,10 +183,10 @@ if(
 
 // 🔥 SHORT MOMENTUM REVERSAL
 if(
-    ema20 =< ema50 &&
-    price =< prev &&
-    prev =< prev2 &&
-    rsi =< 48
+    ema20 = < ema50 &&
+    price = < prev &&
+    prev = < prev2 &&
+    rsi = < 48
 ){
     return "short";
 }  
