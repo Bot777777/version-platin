@@ -175,7 +175,7 @@ if(
     ema20 > ema50 &&
    price > prev &&
     prev > prev2 &&
-    rsi > 52
+    rsi > 51
 ){
     return "buy";
 }
@@ -184,9 +184,9 @@ if(
 // 🔥 SHORT MOMENTUM REVERSAL
 if(
     ema20 < ema50 &&
-    price > prev &&
-    prev > prev2 &&
-    rsi < 49
+    price < prev &&
+    prev < prev2 &&
+    rsi < 48
 ){
     return "short";
 }  
@@ -237,8 +237,8 @@ for(let s of symbols){
 if(user.portfolio[s]){
 
   let change = (coin.price - coin.entry)/coin.entry;
-if(change > 0.0008){
-    coin.safeProfit = true;
+if(change > 0.0008) 
+{  coin.safeProfit = true;
 }
   if(!coin.highest) coin.highest = coin.entry;
 if(coin.price > coin.highest) coin.highest = coin.price;
@@ -256,7 +256,7 @@ if(dropFromTop > 0.004){ // 1% vom Hoch gefallen
 if(
     (coin.safeProfit && change < 0.0003) ||
     change > 0.003 ||       // Take Profit (+0.3%)
-    change < -0.0025 ||     // Stop Loss (-0.2%)
+    change < -0.004 ||     // Stop Loss (-0.2%)
     duration >2400000       // Max 60 Sekunden
   ){
 
@@ -311,8 +311,8 @@ let duration = coin.entryTime ? Date.now() - coin.entryTime : 0;
 if(
     (coin.safeProfit && change < 0.0003) ||
     change > 0.003 ||      // +0.4% Gewinn
-    change < -0.0025 ||    // -0.6% Verlust
-    duration > 1800000     // 3 Minuten
+    change < -0.004 ||    // -0.6% Verlust
+    duration > 2400000     // 3 Minuten
 ){
   
     let invested = coin.shortEntry * user.shorts[s];
