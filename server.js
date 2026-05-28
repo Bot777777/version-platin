@@ -237,7 +237,7 @@ for(let s of symbols){
 if(user.portfolio[s]){
 
   let change = (coin.price - coin.entry)/coin.entry;
-if(change > 0.0008) 
+if(change > 0.008) 
 {  coin.safeProfit = true;
 }
   if(!coin.highest) coin.highest = coin.entry;
