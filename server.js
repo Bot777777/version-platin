@@ -183,10 +183,10 @@ if(
 
 // 🔥 SHORT MOMENTUM REVERSAL
 if(
-    ema20  < ema50 &&
-    price  < prev &&
-    prev  < prev2 &&
-    rsi  <  50
+    ema20  > ema50 &&
+    price  > prev &&
+    prev  > prev2 &&
+    rsi  >  48
 ){
     return "short";
 }  
@@ -393,7 +393,7 @@ let prev = h[h.length-2];
   
   // BUY
   
-if(decision==="buy" && !user.portfolio[s] && !user.shorts[s]){
+if(decision==="buy" && !user.portfolio[s] && !user.portfolio[s]){
   let amount = TRADE_SIZE / coin.price;
   user.balance -= TRADE_SIZE;
 
@@ -407,7 +407,7 @@ tradeLog.unshift("BUY " + s + " @ " + coin.price.toFixed(2));
 }
     // SHORT
   
-if(decision==="short" && !user.shorts[s] && !user.portfolio[s]){
+if(decision==="short" && !user.shorts[s] && !user.shorts[s]){
   let amount = TRADE_SIZE / coin.price;
   user.balance -= TRADE_SIZE;
 
