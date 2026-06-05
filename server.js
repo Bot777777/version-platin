@@ -183,7 +183,7 @@ if(
 
 // 🔥 SHORT MOMENTUM REVERSAL
 if(
-    ema20  > ema50 &&
+    ema21  > ema51 &&
     price  > prev &&
     prev  > prev2 &&
     rsi  >  48
